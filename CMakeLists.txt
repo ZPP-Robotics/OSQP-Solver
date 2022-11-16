@@ -23,16 +23,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(osqpcpp)
 
-add_executable(test3 main.cpp)
+add_executable(mujocotest main.cpp solver.cpp)
 
-target_link_libraries(test3
-        osqp-cpp
-        ${MUJOCO_LIB}
-        ${ARMA_LIB}
-        ${GLFW_LIB})
+target_link_libraries(mujocotest ${MUJOCO_LIB} ${ARMA_LIB} ${GLFW_LIB})
 
-target_include_directories(test3 PRIVATE ${ARMA_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
+target_include_directories(mujocotest PRIVATE ${ARMA_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
 
 if (APPLE)
-    set_target_properties(test3 PROPERTIES LINK_OPTIONS "-Wl,-rpath,${MUJOCO_PATH}")
+    set_target_properties(mujocotest PROPERTIES LINK_OPTIONS "-Wl,-rpath,${MUJOCO_PATH}")
 endif()
+
+add_executable(osqptest solver.cpp)
+target_link_libraries(osqptest osqp-cpp)
