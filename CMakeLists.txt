@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.23)
 project(test3)
 
 set(CMAKE_CXX_STANDARD 17)
+set(MUJOCO_PATH /Users/mat/Documents/mujoco)
 
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/")
+list(APPEND CMAKE_PREFIX_PATH ${MUJOCO_PATH})
 
 find_library(ARMA_LIB armadillo)
 find_path(ARMA_INCLUDE_DIR armadillo)
@@ -11,8 +13,7 @@ find_path(ARMA_INCLUDE_DIR armadillo)
 find_library(GLFW_LIB glfw)
 find_path(GLFW_INCLUDE_DIR glfw)
 
-set(MUJOCO_PATH /Users/mat/Documents/mujoco)
-find_library(MUJOCO_LIB mujoco PATHS ${MUJOCO_PATH})
+find_library(MUJOCO_LIB mujoco)
 
 include(FetchContent)
 FetchContent_Declare(
