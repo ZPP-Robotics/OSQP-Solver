@@ -37,5 +37,5 @@ elseif(UNIX)
 endif()
 
 # OSQP solver test executable
-add_executable(osqptest solver.cpp)
+add_executable(osqptest solver.cpp constraint_builder.h)
 target_link_libraries(osqptest osqp-cpp)
