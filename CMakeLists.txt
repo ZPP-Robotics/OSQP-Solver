@@ -26,7 +26,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(osqpcpp)
 
 # Mujoco test executable
-add_executable(mujocotest main.cpp solver_example.cpp)
+add_executable(mujocotest main.cpp solver_example.cpp utils.h)
+
 target_link_libraries(mujocotest ${MUJOCO_LIB} ${ARMA_LIB} ${GLFW_LIB})
 target_include_directories(mujocotest PRIVATE ${MUJOCO_INCLUDE_DIR} ${ARMA_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
 
@@ -37,5 +38,5 @@ elseif(UNIX)
 endif()
 
 # OSQP solver test executable
-add_executable(osqptest solver_example.cpp constraint_builder.h)
+add_executable(osqptest solver_example.cpp qp_solver.h utils.h constraint_builder.h)
 target_link_libraries(osqptest osqp-cpp)
