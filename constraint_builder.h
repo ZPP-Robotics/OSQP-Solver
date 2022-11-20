@@ -7,89 +7,107 @@
 
 #include "utils.h"
 
+
 template<size_t N_DIM>
 class ConstraintBuilder {
 
+    using constraint_matrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
+    using bound_vector = Eigen::VectorXd;
     using constraint_t = std::array<double, N_DIM>;
     using factor_t = std::pair<size_t, double>;
     using matrix_cell_t = Eigen::Triplet<double, size_t>;
+
     static constexpr const size_t DYNAMICS_DERIVATIVES = 2;
 
 public:
 
     ConstraintBuilder(size_t waypoints, double timestep)
-        : waypoints(waypoints), timestep(timestep) {
+            : waypoints(waypoints), timestep(timestep) {
         linkVelocityToPosition();
+        userConstraintOffset = lowerBounds.size();
+
+        lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, -INF);
+        upperBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, INF);
     }
 
     ConstraintBuilder &posGreaterEq(size_t i, constraint_t v) {
-        addPositionConstraint(i, v);
-        return *this;
+        return positionInRange(i, v);
     }
 
     ConstraintBuilder &posLessEq(size_t i, constraint_t v) {
-        addPositionConstraint(i, NEG_INF<N_DIM>, v);
-        return *this;
+        return positionInRange(i, NEG_INF<N_DIM>, v);
     }
 
     ConstraintBuilder &posEq(size_t i, constraint_t v) {
-        addPositionConstraint(i, v, v);
-        return *this;
+        return positionInRange(i, v, v);
     }
 
     ConstraintBuilder &velocityLessEq(size_t i, constraint_t v) {
-        addVelocityConstraint(i, NEG_INF<N_DIM>, v);
-        return *this;
+        return velocityInRange(i, NEG_INF<N_DIM>, v);
     }
 
     ConstraintBuilder &velocityGreaterEq(size_t i, constraint_t v) {
-        addVelocityConstraint(i, v);
-        return *this;
+        return velocityInRange(i, v);
     }
 
     ConstraintBuilder &velocityEq(size_t i, constraint_t v) {
-        addVelocityConstraint(i, v, v);
-        return *this;
+        return velocityInRange(i, v, v);
+    }
+
+    ConstraintBuilder &positionInRange(size_t i,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
+        return variableInRange(nthPos(i), l, u);
+    }
+
+    ConstraintBuilder &velocityInRange(size_t i,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
+        return variableInRange(nthVelocity(i), l, u);
     }
 
     std::tuple<
-            Eigen::VectorXd,
-            Eigen::SparseMatrix<double, Eigen::ColMajor>,
-            Eigen::VectorXd
-    > build() {
-        Eigen::SparseMatrix<double, Eigen::ColMajor> A;
+            bound_vector,
+            constraint_matrix,
+            bound_vector
+    >
+    build() {
+        constraint_matrix A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * DYNAMICS_DERIVATIVES);
-        A.template setFromTriplets(linearSystem.begin(), linearSystem.end());
+        A.setFromTriplets(linearSystem.begin(), linearSystem.end(), [](const auto &a, const auto &b) { return b; });
 
         return {
-                Eigen::Map<Eigen::VectorXd>(lowerBounds.data(), lowerBounds.size()),
+                Eigen::Map<bound_vector>(lowerBounds.data(), lowerBounds.size()),
                 A,
-                Eigen::Map<Eigen::VectorXd>(upperBounds.data(), upperBounds.size())
+                Eigen::Map<bound_vector>(upperBounds.data(), upperBounds.size())
         };
     }
 
 private:
-    
+
     const size_t waypoints;
     const double timestep;
+    size_t userConstraintOffset = 0;
 
     std::vector<matrix_cell_t> linearSystem{};
     std::vector<double> lowerBounds;
     std::vector<double> upperBounds;
 
-    size_t linkVelocityToPosition() {
+    void linkVelocityToPosition() {
         for (size_t i = 0; i + 1 < waypoints; ++i) {
             size_t baseV = nthVelocity(i);
             size_t baseP = nthPos(i);
             for (size_t j = 0; j < N_DIM; ++j) {
-                addConstraint({
-                        factor_t{baseV + j, timestep},
-                        factor_t{baseP + j + 1, -1},
-                        factor_t{baseP + j, 1}
-                }, 0, 0);
+                lowerBounds.push_back(-INF);
+                upperBounds.push_back(INF);
+                addConstraint(lowerBounds.size() - 1,
+                              {
+                                      factor_t{baseV + j, timestep},
+                                      factor_t{baseP + j + 1, -1},
+                                      factor_t{baseP + j, 1}
+                              }, 0, 0);
             }
         }
-        return waypoints * N_DIM;
     }
 
     [[nodiscard]] size_t nthVelocity(size_t i) const {
@@ -100,36 +118,28 @@ private:
         return i * N_DIM;
     }
 
-    void addConstraint(std::vector<factor_t> &&equation,
+    void addConstraint(size_t constraint_idx,
+                       std::vector<factor_t> &&equation,
                        double l = -INF,
                        double u = INF) {
-        size_t constraints = lowerBounds.size();
-        for (const auto &[variable, value]: equation) {
-            linearSystem.emplace_back(constraints, variable, value);
+        for (const auto &[variable_idx, coeff]: equation) {
+            linearSystem.emplace_back(constraint_idx, variable_idx, coeff);
         }
-        lowerBounds.emplace_back(l);
-        upperBounds.emplace_back(u);
-    }
-    
-    void addPositionConstraint(size_t i,
-                               constraint_t l = NEG_INF<N_DIM>,
-                               constraint_t u = POS_INF<N_DIM>) {
-        size_t base = nthPos(i);
-        for (int j = 0; j < N_DIM; ++j) {
-            addConstraint({factor_t{base + j, 1}}, l[j], u[j]);
-        }
+        lowerBounds[constraint_idx] = l;
+        upperBounds[constraint_idx] = u;
     }
 
-    void addVelocityConstraint(size_t i,
-                               constraint_t l = NEG_INF<N_DIM>,
-                               constraint_t u = POS_INF<N_DIM>) {
-        size_t base = nthVelocity(i);
+    ConstraintBuilder &variableInRange(size_t n_dim_var_start,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
         for (int j = 0; j < N_DIM; ++j) {
-            addConstraint({factor_t{base + j, 1}}, l[j], u[j]);
+            addConstraint(userConstraintOffset + n_dim_var_start + j,
+                          {factor_t{n_dim_var_start + j, 1}},
+                          l[j], u[j]);
         }
+        return *this;
     }
-    
-    
+
 };
 
 

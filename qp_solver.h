@@ -13,29 +13,40 @@ using namespace std;
 using namespace Eigen;
 using namespace osqp;
 
-template<size_t N_DIM>
 class QPSolver {
-
-    using matrix_cell_t = Triplet<double, size_t>;
 
 public:
 
     QPSolver(
             Eigen::VectorXd low,
-            Eigen::SparseMatrix<double, Eigen::ColMajor> A,
-            Eigen::VectorXd upp) {
+            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> A,
+            Eigen::VectorXd upp,
+            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> P
+    ) {
         OsqpInstance instance;
 
         instance.constraint_matrix = A;
-        instance.objective_matrix = tridiagonalMatrix(2, -1, A.cols(), A.cols() / 2);
+        instance.objective_matrix = P;
 
         instance.objective_vector.resize(A.cols());
 
         instance.lower_bounds = low;
         instance.upper_bounds = upp;
 
+        cout << A << endl;
+        cout << instance.objective_matrix << endl;
+
         OsqpSettings settings;
         auto status = solver.Init(instance, settings);
+    }
+
+    void update(
+            Eigen::VectorXd low,
+            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> A,
+            Eigen::VectorXd upp
+    ) {
+        solver.UpdateConstraintMatrix(A);
+        solver.SetBounds(low, upp);
     }
 
     pair<OsqpExitCode, Eigen::VectorXd> solve() {
@@ -46,9 +57,6 @@ public:
 private:
 
     OsqpSolver solver;
-    size_t WAYPOINTS = 2000;
-    size_t VARS = WAYPOINTS * 2;
-    size_t TIME_STEP = 1;
 
 };
 
