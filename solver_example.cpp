@@ -31,7 +31,7 @@ int main() {
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
 
-    constraints.posLessEq(4, fill<DIMS>(0));
+    constraints.posGreaterEq(4, fill<DIMS>(50));
 
     auto [l1, A1, u1] = constraints.build();
     s.update(l1, A1, u1);

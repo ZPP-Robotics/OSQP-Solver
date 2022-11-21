@@ -33,9 +33,6 @@ public:
         instance.lower_bounds = low;
         instance.upper_bounds = upp;
 
-        cout << A << endl;
-        cout << instance.objective_matrix << endl;
-
         OsqpSettings settings;
         auto status = solver.Init(instance, settings);
     }
@@ -45,8 +42,15 @@ public:
             Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> A,
             Eigen::VectorXd upp
     ) {
-        solver.UpdateConstraintMatrix(A);
-        solver.SetBounds(low, upp);
+        absl::Status status;
+
+        if (!(status = solver.UpdateConstraintMatrix(A)).ok()) {
+            throw std::invalid_argument(status.ToString());
+        }
+
+        if (!(status = solver.SetBounds(low, upp)).ok()) {
+            throw std::invalid_argument(status.ToString());
+        }
     }
 
     pair<OsqpExitCode, Eigen::VectorXd> solve() {

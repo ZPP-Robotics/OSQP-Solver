@@ -28,6 +28,9 @@ public:
 
         lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, -INF);
         upperBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, INF);
+
+        // Add default constraints -INF < var < INF.
+        variablesInRange(nthPos(0), nthVelocity(waypoints - 1));
     }
 
     ConstraintBuilder &posGreaterEq(size_t i, constraint_t v) {
@@ -60,10 +63,22 @@ public:
         return variableInRange(nthPos(i), l, u);
     }
 
+    ConstraintBuilder &positionsInRange(size_t first, size_t last,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
+        return variablesInRange(nthPos(first), nthPos(last), l, u);
+    }
+
     ConstraintBuilder &velocityInRange(size_t i,
                                        constraint_t l = NEG_INF<N_DIM>,
                                        constraint_t u = POS_INF<N_DIM>) {
         return variableInRange(nthVelocity(i), l, u);
+    }
+
+    ConstraintBuilder &velocitiesInRange(size_t first, size_t last,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
+        return variablesInRange(nthVelocity(first), nthVelocity(last), l, u);
     }
 
     std::tuple<
@@ -97,13 +112,14 @@ private:
         for (size_t i = 0; i + 1 < waypoints; ++i) {
             size_t baseV = nthVelocity(i);
             size_t baseP = nthPos(i);
+            size_t baseNextP = nthPos(i + 1);
             for (size_t j = 0; j < N_DIM; ++j) {
                 lowerBounds.push_back(-INF);
                 upperBounds.push_back(INF);
                 addConstraint(lowerBounds.size() - 1,
                               {
                                       factor_t{baseV + j, timestep},
-                                      factor_t{baseP + j + 1, -1},
+                                      factor_t{baseNextP + j, -1},
                                       factor_t{baseP + j, 1}
                               }, 0, 0);
             }
@@ -129,10 +145,19 @@ private:
         upperBounds[constraint_idx] = u;
     }
 
+    ConstraintBuilder &variablesInRange(size_t first_start, size_t last_start,
+                                       constraint_t l = NEG_INF<N_DIM>,
+                                       constraint_t u = POS_INF<N_DIM>) {
+        for (size_t i = first_start; i <= last_start; i += N_DIM) {
+            variableInRange(i, l, u);
+        }
+        return *this;
+    }
+
     ConstraintBuilder &variableInRange(size_t n_dim_var_start,
                                        constraint_t l = NEG_INF<N_DIM>,
                                        constraint_t u = POS_INF<N_DIM>) {
-        for (int j = 0; j < N_DIM; ++j) {
+        for (size_t j = 0; j < N_DIM; ++j) {
             addConstraint(userConstraintOffset + n_dim_var_start + j,
                           {factor_t{n_dim_var_start + j, 1}},
                           l[j], u[j]);
