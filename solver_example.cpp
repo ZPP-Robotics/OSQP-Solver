@@ -14,7 +14,6 @@ using namespace Eigen;
 using namespace osqp;
 using namespace std;
 
-
 int main() {
     constexpr const size_t DIMS = 1;
 
@@ -27,6 +26,8 @@ int main() {
             .posLessEq(2 * WAYPOINTS / 3, fill<DIMS>(-200))
             .posEq(0, fill<DIMS>(0))
             .posEq(WAYPOINTS - 1, fill<DIMS>(0));
+            // .accLessEqFromTo(0, WAYPOINTS-1, fill<DIMS>(0.5));
+            // .accGreaterEqFromTo(0, WAYPOINTS-1, fill<DIMS>(-1));
 
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
