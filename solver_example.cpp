@@ -14,6 +14,9 @@ using namespace Eigen;
 using namespace osqp;
 using namespace std;
 
+/*
+ * TEST TEST TEST
+ */
 
 int main() {
     constexpr const size_t DIMS = 1;
