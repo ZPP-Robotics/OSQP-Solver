@@ -14,6 +14,10 @@ using namespace Eigen;
 using namespace osqp;
 using namespace std;
 
+/*
+ * TEST TEST TEST
+ */
+
 int main() {
     constexpr const size_t DIMS = 1;
 
@@ -32,7 +36,7 @@ int main() {
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
 
-    constraints.posLessEq(4, fill<DIMS>(0));
+    constraints.posGreaterEq(4, fill<DIMS>(50));
 
     auto [l1, A1, u1] = constraints.build();
     s.update(l1, A1, u1);
