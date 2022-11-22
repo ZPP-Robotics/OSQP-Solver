@@ -15,7 +15,7 @@ using namespace osqp;
 using namespace std;
 
 /*
- * TEST TEST TEST
+ * TEST TEST TEST TEST
  */
 
 int main() {
