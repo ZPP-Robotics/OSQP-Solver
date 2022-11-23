@@ -32,7 +32,9 @@ public:
         upperBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, INF);
 
         // Add default constraints -INF < var < INF.
-        variablesInRange(nthPos(0), nthAcceleration(waypoints - 1));
+        variablesInRange(nthPos(0), nthPos(waypoints - 1));
+        for(auto i = 0; i < waypoints; i++)
+            accelerationInRange(nthAcceleration(i));
     }
 
     ConstraintBuilder &posGreaterEq(size_t i, constraint_t v) {
