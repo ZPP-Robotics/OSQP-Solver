@@ -32,7 +32,7 @@ public:
         upperBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES, INF);
 
         // Add default constraints -INF < var < INF.
-        variablesInRange(nthPos(0), nthVelocity(waypoints - 1));
+        variablesInRange(nthPos(0), nthAcceleration(waypoints - 1));
     }
 
     ConstraintBuilder &posGreaterEq(size_t i, constraint_t v) {
@@ -71,24 +71,24 @@ public:
         return accelerationInRange(i, v, v);
     }
 
-    ConstraintBuilder &accGreaterEqFromTo(size_t a, size_t b, constraint_t v) {
-        assert(a < b);
-        while(a != b)
-            accGreaterEq(a++, v);
+    ConstraintBuilder &accGreaterEqFromTo(size_t first, size_t last, constraint_t v) {
+        assert(first < last);
+        while(first <= last)
+            accGreaterEq(first++, v);
         return *this;
     }
 
-    ConstraintBuilder &accLessEqFromTo(size_t a, size_t b, constraint_t v) {
-        assert(a < b);
-        while(a != b)
-            accLessEq(a++, v);
+    ConstraintBuilder &accLessEqFromTo(size_t first, size_t last, constraint_t v) {
+        assert(first < last);
+        while(first <= last)
+            accLessEq(first++, v);
         return *this;
     }
 
-    ConstraintBuilder &accEqFromTo(size_t a, size_t b, constraint_t v) {
-        assert(a < b);
-        while(a != b)
-            accEq(a++, v);
+    ConstraintBuilder &accEqFromTo(size_t first, size_t last, constraint_t v) {
+        assert(first < last);
+        while(first <= last)
+            accEq(first++, v);
         return *this;
     }
 
@@ -116,11 +116,13 @@ public:
         assert(i < waypoints);
         size_t baseA = nthAcceleration(i);
         size_t baseV = nthVelocity(i);
+        size_t baseNextV = nthVelocity(i) + N_DIM;
         for(int j = 0; j < N_DIM; j++) {
+            // l <= 1/timestep * (v_{t+1} - t_{t} ) <= u
             addConstraint(userConstraintOffset + baseA + j,
                           {
-                            factor_t{baseV + j + N_DIM,  1},
-                            factor_t{baseV + j        , -1}
+                            factor_t{baseNextV + j,  1},
+                            factor_t{baseV     + j, -1}
                           }, l[j] / timestep, u[j] / timestep);
         }
         return *this;
