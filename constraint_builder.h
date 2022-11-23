@@ -33,7 +33,7 @@ public:
 
         // Add default constraints -INF < var < INF.
         variablesInRange(nthPos(0), nthPos(waypoints - 1));
-        for(auto i = 0; i < waypoints; i++)
+        for(auto i = 0; i < waypoints - 1; i++)
             accelerationInRange(nthAcceleration(i));
     }
 
