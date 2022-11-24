@@ -35,6 +35,8 @@ public:
 
         OsqpSettings settings;
         auto status = solver.Init(instance, settings);
+        if(status != absl::OkStatus())
+            assert(false);
     }
 
     void update(

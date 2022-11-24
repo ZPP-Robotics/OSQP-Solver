@@ -2,13 +2,16 @@
 
 #include <osqp++.h>
 #include <tuple>
+#include <fstream>
+#include <iomanip>
+
 #include "constraint_builder.h"
 #include "qp_solver.h"
 
-constexpr const size_t WAYPOINTS = 20;
+constexpr const size_t WAYPOINTS = 60 * 5; // 60 fps for 5 seconds
 constexpr const int PROPERTIES = 2;
 constexpr const int VARS = WAYPOINTS * PROPERTIES;
-constexpr const double TIME_STEP = 1;
+constexpr const double TIME_STEP = 1./60.; // basic control once per 1/60 sec
 
 using namespace Eigen;
 using namespace osqp;
@@ -19,38 +22,37 @@ using namespace std;
  */
 
 int main() {
-    constexpr const size_t DIMS = 1;
+    constexpr const size_t DIMS = 6;
 
-    auto P = tridiagonalMatrix(2, -1, VARS, WAYPOINTS);
+    auto P = tridiagonalMatrix(2, -1, VARS * DIMS, WAYPOINTS);
 
     auto constraints = ConstraintBuilder<DIMS>{WAYPOINTS, TIME_STEP}
             .velocityEq(0, fill<DIMS>(0))
             .velocityEq(WAYPOINTS - 1, fill<DIMS>(0))
-            .posGreaterEq(WAYPOINTS / 3, fill<DIMS>(100))
-            .posLessEq(2 * WAYPOINTS / 3, fill<DIMS>(-200))
             .posEq(0, fill<DIMS>(0))
-            .posEq(WAYPOINTS - 1, fill<DIMS>(0));
-            // .accLessEqFromTo(0, WAYPOINTS-1, fill<DIMS>(0.5));
-            // .accGreaterEqFromTo(0, WAYPOINTS-1, fill<DIMS>(-1));
+            .posEq(WAYPOINTS - 1, std::array<double, DIMS>{1, 1, 1, 1, 1, 1})
+            .accInRange(0, WAYPOINTS - 1,std::array<double, DIMS>{-1, -1, -1, -1, -1, -1}, std::array<double, DIMS>{1, 1, 1, 1, 1, 1});
 
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
 
-    constraints.posGreaterEq(4, fill<DIMS>(50));
-
-    auto [l1, A1, u1] = constraints.build();
-    s.update(l1, A1, u1);
-
     auto [a1, b1] = s.solve();
 
-    for (int i = 0; i < WAYPOINTS; ++i) {
-        cout << b1[i] << ", ";
-    }
-    cout << endl;
-    for (int i = WAYPOINTS; i < VARS; ++i) {
-        cout << b1[i] << ", ";
+    std::ofstream fp_pos, fp_vel;
+    fp_pos.open("ctrl_pos.data");
+    fp_vel.open("ctrl_vel.data");
+    for(int i = 0; i < WAYPOINTS; ++i) {
+        auto VEL_OFFSET = WAYPOINTS * DIMS;
+        for(int j = 0; j < DIMS; j++)
+        {
+            fp_pos << std::setw(20) << b1[i * DIMS + j];
+            fp_vel << std::setw(20) << b1[i * DIMS + j + VEL_OFFSET];
+        }
+        fp_pos << "\n";
+        fp_vel << "\n";
     }
 
-
+    fp_pos.close();
+    fp_vel.close();
 
 }
