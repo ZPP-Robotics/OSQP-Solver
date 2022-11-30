@@ -14,29 +14,22 @@ using namespace Eigen;
 using namespace osqp;
 using namespace std;
 
-/*
- * TEST TEST TEST
- */
-
 int main() {
+
     constexpr const size_t DIMS = 1;
 
     auto P = tridiagonalMatrix(2, -1, VARS, WAYPOINTS);
 
     auto constraints = ConstraintBuilder<DIMS>{WAYPOINTS, TIME_STEP}
-            .velocityEq(0, fill<DIMS>(0))
-            .velocityEq(WAYPOINTS - 1, fill<DIMS>(0))
-            .posGreaterEq(WAYPOINTS / 3, fill<DIMS>(100))
-            .posLessEq(2 * WAYPOINTS / 3, fill<DIMS>(-200))
-            .posEq(0, fill<DIMS>(0))
-            .posEq(WAYPOINTS - 1, fill<DIMS>(0));
-            // .accLessEqFromTo(0, WAYPOINTS-1, fill<DIMS>(0.5));
-            // .accGreaterEqFromTo(0, WAYPOINTS-1, fill<DIMS>(-1));
+            .velocityInRange(0, fill<DIMS>(0), fill<DIMS>(0))
+            .velocityInRange(WAYPOINTS - 1, fill<DIMS>(0), fill<DIMS>(0))
+            .positionInRange(WAYPOINTS / 3, fill<DIMS>(100), POS_INF<DIMS>)
+            .positionInRange(2 * WAYPOINTS / 3, NEG_INF<DIMS>, fill<DIMS>(-200))
+            .positionInRange(0, fill<DIMS>(0), fill<DIMS>(0))
+            .positionInRange(WAYPOINTS - 1, fill<DIMS>(0), fill<DIMS>(0));
 
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
-
-    constraints.posGreaterEq(4, fill<DIMS>(50));
 
     auto [l1, A1, u1] = constraints.build();
     s.update(l1, A1, u1);
@@ -50,7 +43,6 @@ int main() {
     for (int i = WAYPOINTS; i < VARS; ++i) {
         cout << b1[i] << ", ";
     }
-
 
 
 }

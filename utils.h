@@ -1,5 +1,5 @@
-#ifndef TEST3_UTILS_H
-#define TEST3_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <limits>
 #include <array>
@@ -8,8 +8,8 @@
 constexpr const double INF = std::numeric_limits<double>::infinity();
 
 template<size_t N>
-static constexpr std::array<double, N> fill(double val) {
-    std::array<double, N> res{};
+static constexpr std::array<std::optional<double>, N> fill(double val) {
+    std::array<std::optional<double>, N> res{};
     for (int i = 0; i < N; ++i) {
         res[i] = val;
     }
@@ -17,10 +17,13 @@ static constexpr std::array<double, N> fill(double val) {
 }
 
 template<size_t N>
-static constexpr const std::array<double, N> POS_INF = fill<N>(INF);
+static constexpr const std::array<std::optional<double>, N> EMPTY{};
 
 template<size_t N>
-static constexpr const std::array<double, N> NEG_INF = fill<N>(-INF);
+static constexpr const std::array<std::optional<double>, N> POS_INF = fill<N>(INF);
+
+template<size_t N>
+static constexpr const std::array<std::optional<double>, N> NEG_INF = fill<N>(-INF);
 
 Eigen::SparseMatrix<double, Eigen::ColMajor>
 tridiagonalMatrix(double a, double b, int n, int offset = 0) {
@@ -41,4 +44,4 @@ tridiagonalMatrix(double a, double b, int n, int offset = 0) {
     return m;
 }
 
-#endif //TEST3_UTILS_H
+#endif //UTILS_H
