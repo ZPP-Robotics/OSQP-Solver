@@ -21,8 +21,13 @@ int main() {
 
     auto P = tridiagonalMatrix(2, -1, VARS, WAYPOINTS);
 
-    auto constraints = ConstraintBuilder<DIMS>{WAYPOINTS, TIME_STEP};
-
+    auto constraints = ConstraintBuilder<DIMS>{WAYPOINTS, TIME_STEP}
+            .velocity(0, constraints::equal<DIMS>(0))
+            .velocity(WAYPOINTS - 1, constraints::equal<DIMS>(0))
+            .position(WAYPOINTS / 3, constraints::greaterEq<DIMS>(100))
+            .position(2 * WAYPOINTS / 3, constraints::lessEq<DIMS>(-200))
+            .position(0, constraints::equal<DIMS>(0))
+            .position(WAYPOINTS - 1, constraints::equal<DIMS>(0));
 
     auto [l, A, u] = constraints.build();
 
