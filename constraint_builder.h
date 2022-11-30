@@ -3,14 +3,15 @@
 
 #include <cassert>
 
-#include "utils.h"
+#include "constraints.h"
+
+using namespace constraints;
 
 template<size_t N_DIM>
 class ConstraintBuilder {
 
     using constraint_matrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
     using bound_vector = Eigen::VectorXd;
-    using constraint_t = std::array<std::optional<double>, N_DIM>;
     using factor_t = std::pair<size_t, double>;
     using matrix_cell_t = Eigen::Triplet<double, size_t>;
 
@@ -28,48 +29,36 @@ public:
 
         // Add default constraints -INF < var < INF.
 
-        positionsInRange(0, waypoints - 1, NEG_INF<N_DIM>, POS_INF<N_DIM>);
-        velocitiesInRange(0, waypoints - 1, NEG_INF<N_DIM>, POS_INF<N_DIM>);
-        accelerationsInRange(0, waypoints - 2, NEG_INF<N_DIM>, POS_INF<N_DIM>);
+        positions(0, waypoints - 1, ANY<N_DIM>);
+        velocities(0, waypoints - 1, ANY<N_DIM>);
+        accelerations(0, waypoints - 2, ANY<N_DIM>);
     }
 
-    ConstraintBuilder &positionInRange(size_t i,
-                                       constraint_t l,
-                                       constraint_t u) {
-        return positionsInRange(i, i, l, u);
+    ConstraintBuilder &position(size_t i, const constraint_t<N_DIM> &c) {
+        return positions(i, i, c);
     }
 
-    ConstraintBuilder &positionsInRange(size_t first, size_t last,
-                                        constraint_t l,
-                                        constraint_t u) {
-        return variablesInRange(nthPos(first), nthPos(last), l, u);
+    ConstraintBuilder &positions(size_t first, size_t last, const constraint_t<N_DIM> &c) {
+        return variablesInRange(nthPos(first), nthPos(last), c);
     }
 
-    ConstraintBuilder &velocityInRange(size_t i,
-                                       constraint_t l,
-                                       constraint_t u) {
-        return velocitiesInRange(i, i, l, u);
+    ConstraintBuilder &velocity(size_t i, const constraint_t<N_DIM> &c) {
+        return velocities(i, i, c);
     }
 
-    ConstraintBuilder &velocitiesInRange(size_t first, size_t last,
-                                         constraint_t l,
-                                         constraint_t u) {
-        return variablesInRange(nthVelocity(first), nthVelocity(last), l, u);
+    ConstraintBuilder &velocities(size_t first, size_t last, const constraint_t<N_DIM> &c) {
+        return variablesInRange(nthVelocity(first), nthVelocity(last), c);
     }
 
-    ConstraintBuilder &accelerationsInRange(size_t first, size_t last,
-                                            constraint_t l,
-                                            constraint_t u) {
+    ConstraintBuilder &accelerations(size_t first, size_t last, const constraint_t<N_DIM> &c) {
         for (size_t i = first; i <= last; ++i) {
-            accelerationInRange(i, l, u);
+            acceleration(i, c);
         }
         return *this;
     }
 
-    ConstraintBuilder &accelerationInRange(size_t i,
-                                           constraint_t l,
-                                           constraint_t u) {
-        assert(i < waypoints);
+    ConstraintBuilder &acceleration(size_t i, const constraint_t<N_DIM> &c) {
+        assert(i < waypoints - 1);
         size_t baseA = nthAcceleration(i);
         size_t baseV = nthVelocity(i);
         size_t baseNextV = nthVelocity(i + 1);
@@ -79,7 +68,7 @@ public:
                           {
                                   {baseNextV + j, 1 / timestep},
                                   {baseV + j,     -1 / timestep}
-                          }, l[j], u[j]);
+                          }, c[j]);
         }
         return *this;
     }
@@ -92,6 +81,8 @@ public:
     build() {
         constraint_matrix A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
+
+        // On duplicate, overwrite cell value with the newest Triplet.
         A.setFromTriplets(linearSystem.begin(), linearSystem.end(), [](const auto &a, const auto &b) { return b; });
 
         return {
@@ -125,33 +116,30 @@ private:
 
     void addConstraint(size_t constraint_idx,
                        std::vector<factor_t> &&equation,
-                       std::optional<double> l,
-                       std::optional<double> u) {
+                       bound_t b) {
+        auto &[l, u] = b;
         for (const auto &[variable_idx, coeff]: equation) {
             linearSystem.emplace_back(constraint_idx, variable_idx, coeff);
         }
-        if (l) lowerBounds[constraint_idx] = l.value();
-        if (u) upperBounds[constraint_idx] = u.value();
+        if (l) lowerBounds[constraint_idx] = *l;
+        if (u) upperBounds[constraint_idx] = *u;
+        assert(lowerBounds[constraint_idx] <= upperBounds[constraint_idx]);
     }
 
-    ConstraintBuilder &variableInRange(size_t n_dim_var_start,
-                                       constraint_t l,
-                                       constraint_t u) {
+    ConstraintBuilder &constrainVariable(size_t n_dim_var_start, const constraint_t<N_DIM> &c) {
         for (size_t j = 0; j < N_DIM; ++j) {
             addConstraint(userConstraintOffset + n_dim_var_start + j,
                           {
                                   {n_dim_var_start + j, 1}
                           },
-                          l[j], u[j]);
+                          c[j]);
         }
         return *this;
     }
 
-    ConstraintBuilder &variablesInRange(size_t first_start, size_t last_start,
-                                        constraint_t l,
-                                        constraint_t u) {
+    ConstraintBuilder &variablesInRange(size_t first_start, size_t last_start, const constraint_t<N_DIM> &c) {
         for (size_t i = first_start; i <= last_start; i += N_DIM) {
-            variableInRange(i, l, u);
+            constrainVariable(i, c);
         }
         return *this;
     }
@@ -169,7 +157,7 @@ private:
                                       {baseV + j,     timestep},
                                       {baseNextP + j, -1},
                                       {baseP + j,     1}
-                              }, 0, 0);
+                              }, {0, 0});
             }
         }
     }
