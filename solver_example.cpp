@@ -31,7 +31,7 @@ int main() {
             .velocityEq(WAYPOINTS - 1, fill<DIMS>(0))
             .posEq(0, fill<DIMS>(0))
             .posEq(WAYPOINTS - 1, std::array<double, DIMS>{1, 1, 1, 1, 1, 1})
-            .accInRange(0, WAYPOINTS - 1,std::array<double, DIMS>{-1, -1, -1, -1, -1, -1}, std::array<double, DIMS>{1, 1, 1, 1, 1, 1});
+            .accInRange(0, WAYPOINTS - 1, std::array<double, DIMS>{-1, -1, -1, -1, -1, -1}, std::array<double, DIMS>{1, 1, 1, 1, 1, 1});
 
     auto [l, A, u] = constraints.build();
     QPSolver s{l, A, u, P};
