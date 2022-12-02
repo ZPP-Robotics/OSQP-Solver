@@ -1,26 +1,9 @@
-#ifndef TEST3_UTILS_H
-#define TEST3_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <limits>
 #include <array>
 #include <osqp++.h>
-
-constexpr const double INF = std::numeric_limits<double>::infinity();
-
-template<size_t N>
-static constexpr std::array<double, N> fill(double val) {
-    std::array<double, N> res{};
-    for (int i = 0; i < N; ++i) {
-        res[i] = val;
-    }
-    return res;
-}
-
-template<size_t N>
-static constexpr const std::array<double, N> POS_INF = fill<N>(INF);
-
-template<size_t N>
-static constexpr const std::array<double, N> NEG_INF = fill<N>(-INF);
 
 Eigen::SparseMatrix<double, Eigen::ColMajor>
 tridiagonalMatrix(double a, double b, int n, int offset = 0) {
@@ -41,4 +24,6 @@ tridiagonalMatrix(double a, double b, int n, int offset = 0) {
     return m;
 }
 
-#endif //TEST3_UTILS_H
+
+
+#endif //UTILS_H
