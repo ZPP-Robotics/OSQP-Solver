@@ -12,7 +12,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(osqpcpp)
 
 # ---- Build header-only library qp_solver
-add_library(qp_solver INTERFACE src/constraints/dupa.cpp src/constraints/dupa.h)
+add_library(qp_solver INTERFACE)
 target_link_libraries(qp_solver INTERFACE osqp-cpp)
 target_include_directories(qp_solver INTERFACE src)
 
