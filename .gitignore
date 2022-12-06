@@ -11,3 +11,7 @@
 !src/
 !src/*
 !src/**/*
+
+!test/
+!test/*
+!test/**/*
