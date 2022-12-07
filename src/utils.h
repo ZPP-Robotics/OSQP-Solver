@@ -6,17 +6,17 @@
 #include <osqp++.h>
 
 Eigen::SparseMatrix<double, Eigen::ColMajor>
-tridiagonalMatrix(double a, double b, int n, int offset = 0) {
+triDiagonalMatrix(double a, double b, int n, int offset = 0) {
     Eigen::SparseMatrix<double> m(n, n);
 
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {
-        nonZeroValues.emplace_back(i, i, 2);
+        nonZeroValues.emplace_back(i, i, a);
         if (i + 1 < n) {
-            nonZeroValues.emplace_back(i, i + 1, -1);
+            nonZeroValues.emplace_back(i, i + 1, b);
         }
         if (i - 1 >= offset) {
-            nonZeroValues.emplace_back(i, i - 1, -1);
+            nonZeroValues.emplace_back(i, i - 1, b);
         }
     }
     m.setFromTriplets(nonZeroValues.begin(), nonZeroValues.end());

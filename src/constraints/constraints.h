@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <optional>
+#include <limits>
 
 namespace constraints {
 

@@ -1,8 +1,7 @@
 #include <iostream>
 
-#include <osqp++.h>
 #include <tuple>
-#include "constraint_builder.h"
+#include "constraints/constraint_builder.h"
 #include "utils.h"
 #include "qp_solver.h"
 
@@ -19,7 +18,7 @@ int main() {
 
     constexpr const size_t DIMS = 1;
 
-    auto P = tridiagonalMatrix(2, -1, VARS, WAYPOINTS);
+    auto P = triDiagonalMatrix(2, -1, VARS, WAYPOINTS);
 
     auto constraints = ConstraintBuilder<DIMS>{WAYPOINTS, TIME_STEP}
             .velocity(0, constraints::equal<DIMS>(0))

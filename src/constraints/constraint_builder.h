@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "constraints.h"
+#include "osqp++.h"
 
 using namespace constraints;
 
@@ -103,14 +104,17 @@ private:
     std::vector<double> upperBounds;
 
     [[nodiscard]] size_t nthVelocity(size_t i) const {
+        assert(i < waypoints);
         return waypoints * N_DIM + nthPos(i);
     }
 
     [[nodiscard]] size_t nthPos(size_t i) const {
+        assert(i < waypoints);
         return i * N_DIM;
     }
 
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
+        assert(i < waypoints - 1);
         return waypoints * N_DIM * 2 + i * N_DIM;
     }
 

@@ -1,7 +1,42 @@
 cmake_minimum_required(VERSION 3.23)
-project(test3)
+project(GOMP)
 
 set(CMAKE_CXX_STANDARD 17)
+
+include(FetchContent)
+FetchContent_Declare(
+        osqpcpp
+        # Specify the commit you depend on and update it regularly.
+        URL https://github.com/google/osqp-cpp/archive/8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c.zip
+)
+FetchContent_MakeAvailable(osqpcpp)
+
+# ---- Build header-only library qp_solver
+add_library(qp_solver INTERFACE)
+target_link_libraries(qp_solver INTERFACE osqp-cpp)
+target_include_directories(qp_solver INTERFACE src)
+
+
+# ---- Build usage example
+add_executable(solver_example solver_example.cpp)
+target_link_libraries(solver_example qp_solver)
+
+
+# ----- Build tests
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        origin/main
+)
+FetchContent_MakeAvailable(googletest)
+include(GoogleTest)
+
+file(GLOB_RECURSE sources test/*.cpp)
+add_executable(tests ${sources})
+target_link_libraries(tests qp_solver gtest gmock gtest_main)
+
+#[[
 set(MUJOCO_PATH /Users/mat/Documents/mujoco)
 set(DOWNLOADED_LIBS /opt/homebrew/)
 
@@ -17,14 +52,6 @@ find_path(GLFW_INCLUDE_DIR glfw)
 find_library(MUJOCO_LIB mujoco)
 find_path(MUJOCO_INCLUDE_DIR mujoco)
 
-include(FetchContent)
-FetchContent_Declare(
-        osqpcpp
-        # Specify the commit you depend on and update it regularly.
-        URL https://github.com/google/osqp-cpp/archive/8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c.zip
-)
-FetchContent_MakeAvailable(osqpcpp)
-
 # Mujoco test executable
 add_executable(mujocotest main.cpp solver_example.cpp utils.h)
 
@@ -36,7 +63,4 @@ if(APPLE)
 elseif(UNIX)
     target_include_directories(mujocotest PRIVATE ${MUJOCO_INCLUDE_DIR})
 endif()
-
-# OSQP solver test executable
-add_executable(osqptest solver_example.cpp qp_solver.h utils.h constraint_builder.h constraints.h)
-target_link_libraries(osqptest osqp-cpp)
+]]
