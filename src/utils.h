@@ -5,9 +5,12 @@
 #include <array>
 #include <osqp++.h>
 
-Eigen::SparseMatrix<double, Eigen::ColMajor>
-triDiagonalMatrix(double a, double b, int n, int offset = 0) {
-    Eigen::SparseMatrix<double> m(n, n);
+using ExitCode = osqp::OsqpExitCode;
+using QPMatrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
+using QPVector = Eigen::VectorXd;
+
+QPMatrix triDiagonalMatrix(double a, double b, int n, int offset = 0) {
+    QPMatrix m(n, n);
 
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {

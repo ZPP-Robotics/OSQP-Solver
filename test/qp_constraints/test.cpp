@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "constraints/constraint_builder.h"
+#include "constraints/constraint-builder.h"
 
 const double DEFAULT_TIME_STEP = 2;
 const size_t DEFAULT_WAYPOINTS_CNT = 2;
@@ -16,6 +16,10 @@ const size_t DEFAULT_WAYPOINTS_CNT = 2;
  * respectively.
  *
  */
+
+void f(std::array<std::optional<double>, 3> r) {
+
+}
 
 void expect_equality_constraint(size_t idx, const Eigen::VectorXd &low, const Eigen::VectorXd &upp) {
     EXPECT_EQ(low[idx], 0);
@@ -44,4 +48,7 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
         EXPECT_EQ(A.coeff(i, i + 1), -1); // (-1) * q_{i + 1}
         EXPECT_EQ(A.coeff(i, DEFAULT_WAYPOINTS_CNT + i), DEFAULT_TIME_STEP); // v_i * DEFAULT_TIME_STEP
     }
+
+    f({3, 2, 1});
+    std::array<std::optional<double>, 3> a = {1, 2, 3};
 }

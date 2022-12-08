@@ -12,13 +12,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(osqpcpp)
 
 # ---- Build header-only library qp_solver
-add_library(qp_solver INTERFACE)
+file(GLOB_RECURSE sources src/*.h)
+add_library(qp_solver INTERFACE ${sources})
 target_link_libraries(qp_solver INTERFACE osqp-cpp)
 target_include_directories(qp_solver INTERFACE src)
 
 
 # ---- Build usage example
-add_executable(solver_example solver_example.cpp)
+add_executable(solver_example solver-example.cpp)
 target_link_libraries(solver_example qp_solver)
 
 
@@ -32,8 +33,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
-file(GLOB_RECURSE sources test/*.cpp)
-add_executable(tests ${sources})
+file(GLOB_RECURSE test_sources test/*.cpp)
+add_executable(tests ${test_sources})
 target_link_libraries(tests qp_solver gtest gmock gtest_main)
 
 #[[

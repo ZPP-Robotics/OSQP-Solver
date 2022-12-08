@@ -3,18 +3,20 @@
 
 #include <cassert>
 
+#include "utils.h"
 #include "constraints.h"
 #include "osqp++.h"
 
 using namespace constraints;
 
+// <lower_bounds, constraint_matrix, upper_bounds>
+using QPConstraints = std::tuple<QPVector, QPMatrix, QPVector>;
+
 template<size_t N_DIM>
 class ConstraintBuilder {
 
-    using constraint_matrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
-    using bound_vector = Eigen::VectorXd;
-    using factor_t = std::pair<size_t, double>;
-    using matrix_cell_t = Eigen::Triplet<double, size_t>;
+    using Factor = std::pair<size_t, double>;
+    using matrix_cell = Eigen::Triplet<double, size_t>;
 
     static constexpr const size_t DYNAMICS_DERIVATIVES = 3;
 
@@ -35,61 +37,58 @@ public:
         accelerations(0, waypoints - 2, ANY<N_DIM>);
     }
 
-    ConstraintBuilder &position(size_t i, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
         return positions(i, i, c);
     }
 
-    ConstraintBuilder &positions(size_t first, size_t last, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &positions(size_t first, size_t last, const Constraint<N_DIM> &c) {
         return variablesInRange(nthPos(first), nthPos(last), c);
     }
 
-    ConstraintBuilder &velocity(size_t i, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &velocity(size_t i, const Constraint<N_DIM> &c) {
         return velocities(i, i, c);
     }
 
-    ConstraintBuilder &velocities(size_t first, size_t last, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &velocities(size_t first, size_t last, const Constraint<N_DIM> &c) {
         return variablesInRange(nthVelocity(first), nthVelocity(last), c);
     }
 
-    ConstraintBuilder &accelerations(size_t first, size_t last, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &accelerations(size_t first, size_t last, const Constraint<N_DIM> &c) {
         for (size_t i = first; i <= last; ++i) {
             acceleration(i, c);
         }
         return *this;
     }
 
-    ConstraintBuilder &acceleration(size_t i, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &acceleration(size_t i, const Constraint<N_DIM> &c) {
         assert(i < waypoints - 1);
         size_t baseA = nthAcceleration(i);
         size_t baseV = nthVelocity(i);
         size_t baseNextV = nthVelocity(i + 1);
+
         for (int j = 0; j < N_DIM; j++) {
             // l <= 1/timestep * (v_{t+1} - v_{t} ) <= u
             addConstraint(userConstraintOffset + baseA + j,
                           {
                                   {baseNextV + j, 1 / timestep},
                                   {baseV + j,     -1 / timestep}
-                          }, c[j]);
+                          },
+                          getConstraintForNthDim(j, c));
         }
         return *this;
     }
 
-    std::tuple<
-            bound_vector,
-            constraint_matrix,
-            bound_vector
-    >
-    build() {
-        constraint_matrix A;
+    QPConstraints build() {
+        QPMatrix A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
 
         // On duplicate, overwrite cell value with the newest Triplet.
         A.setFromTriplets(linearSystem.begin(), linearSystem.end(), [](const auto &a, const auto &b) { return b; });
 
         return {
-                Eigen::Map<bound_vector>(lowerBounds.data(), lowerBounds.size()),
+                Eigen::Map<QPVector>(lowerBounds.data(), lowerBounds.size()),
                 A,
-                Eigen::Map<bound_vector>(upperBounds.data(), upperBounds.size())
+                Eigen::Map<QPVector>(upperBounds.data(), upperBounds.size())
         };
     }
 
@@ -99,7 +98,7 @@ private:
     const double timestep;
     size_t userConstraintOffset = 0;
 
-    std::vector<matrix_cell_t> linearSystem{};
+    std::vector<matrix_cell> linearSystem{};
     std::vector<double> lowerBounds;
     std::vector<double> upperBounds;
 
@@ -118,9 +117,19 @@ private:
         return waypoints * N_DIM * 2 + i * N_DIM;
     }
 
+    std::pair<std::optional<double>, std::optional<double>>
+    getConstraintForNthDim(size_t n, const Constraint<N_DIM> &c) {
+        auto &[l_opt, u_opt] = c;
+        std::optional<double> l{};
+        std::optional<double> u{};
+        if (l_opt) l = (*l_opt)[n];
+        if (u_opt) u = (*u_opt)[n];
+        return {l, u};
+    }
+
     void addConstraint(size_t constraint_idx,
-                       std::vector<factor_t> &&equation,
-                       bound_t b) {
+                       std::vector<Factor> &&equation,
+                       std::pair<std::optional<double>, std::optional<double>> b) {
         auto &[l, u] = b;
         for (const auto &[variable_idx, coeff]: equation) {
             linearSystem.emplace_back(constraint_idx, variable_idx, coeff);
@@ -130,18 +139,18 @@ private:
         assert(lowerBounds[constraint_idx] <= upperBounds[constraint_idx]);
     }
 
-    ConstraintBuilder &constrainVariable(size_t n_dim_var_start, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &constrainVariable(size_t n_dim_var_start, const Constraint<N_DIM> &c) {
         for (size_t j = 0; j < N_DIM; ++j) {
             addConstraint(userConstraintOffset + n_dim_var_start + j,
                           {
                                   {n_dim_var_start + j, 1}
                           },
-                          c[j]);
+                          getConstraintForNthDim(j, c));
         }
         return *this;
     }
 
-    ConstraintBuilder &variablesInRange(size_t first_start, size_t last_start, const constraint_t<N_DIM> &c) {
+    ConstraintBuilder &variablesInRange(size_t first_start, size_t last_start, const Constraint<N_DIM> &c) {
         for (size_t i = first_start; i <= last_start; i += N_DIM) {
             constrainVariable(i, c);
         }
