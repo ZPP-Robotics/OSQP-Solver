@@ -13,7 +13,7 @@ class QPSolver {
 
 public:
 
-    QPSolver(QPConstraints &&c, const QPMatrix &P) {
+    QPSolver(const QPConstraints &c, const QPMatrix &P) {
         auto &[l, A, u] = c;
         OsqpInstance instance;
 
@@ -30,7 +30,7 @@ public:
         assert(status.ok());
     }
 
-    void update(QPConstraints &&qp_constraints) {
+    void update(const QPConstraints &qp_constraints) {
         absl::Status status;
         auto [low, A, upp] = qp_constraints;
         if (!(status = solver.UpdateConstraintMatrix(A)).ok()) {
