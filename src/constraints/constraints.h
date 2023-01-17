@@ -9,37 +9,47 @@ namespace constraints {
 
     const double INF = std::numeric_limits<double>::infinity();
 
-    // One-dimensional constraint.
-    using bound_t = std::pair<std::optional<double>, std::optional<double>>;
-
-    // Multidimensional constraint = array of one-dimensional bounds.
+    // N-dimensional bound (upper or lower).
     template<size_t N>
-    using constraint_t = std::array<bound_t, N>;
+    using Bound = std::optional<std::array<double, N>>;
 
+    // N-dimensional lower and upper bounds.
     template<size_t N>
-    constraint_t<N> inRange(std::optional<double> low, std::optional<double> upp) {
-        constraint_t<N> res;
-        res.fill({low, upp});
+    using Constraint = std::pair<Bound<N>, Bound<N>>;
+
+    // Returns array of length N filled with value `val`.
+    template<size_t N>
+    std::array<double, N> of(double val) {
+        std::array<double, N> res;
+        res.fill(val);
         return res;
     }
 
     template<size_t N>
-    const constraint_t<N> ANY = inRange<N>(-INF, INF);
-
-    template<size_t N>
-    constraint_t<N> greaterEq(double val) {
-        return inRange<N>(val, {});
+    Constraint<N> inRange(Bound<N> low, Bound<N> upp) {
+        return {low, upp};
     }
 
     template<size_t N>
-    constraint_t<N> lessEq(double val) {
-        return inRange<N>({}, val);
+    Constraint<N> equal(std::array<double, N> vals) {
+        return inRange<N>({vals}, {vals});
     }
 
     template<size_t N>
-    constraint_t<N> equal(double val) {
-        return inRange<N>(val, val);
+    Constraint<N> greaterEq(std::array<double, N> vals) {
+        return inRange<N>(vals, {});
     }
+
+    template<size_t N>
+    Constraint<N> lessEq(std::array<double, N> vals) {
+        return inRange<N>({}, vals);
+    }
+
+    template<size_t N>
+    const Constraint<N> ANY = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
+
+    template<size_t N>
+    const Constraint<N> EQ_ZERO = equal<N>(of<N>(0));
 
 }
 

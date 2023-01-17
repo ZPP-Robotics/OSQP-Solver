@@ -13,13 +13,8 @@ class QPSolver {
 
 public:
 
-    QPSolver(
-            const Eigen::VectorXd &low,
-            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &A,
-            const Eigen::VectorXd &upp,
-            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &P
-    ) {
-
+    QPSolver(const QPConstraints &c, const QPMatrix &P) {
+        auto &[l, A, u] = c;
         OsqpInstance instance;
 
         instance.constraint_matrix = A;
@@ -27,20 +22,17 @@ public:
 
         instance.objective_vector.resize(A.cols());
 
-        instance.lower_bounds = low;
-        instance.upper_bounds = upp;
+        instance.lower_bounds = l;
+        instance.upper_bounds = u;
 
         OsqpSettings settings;
         auto status = solver.Init(instance, settings);
+        assert(status.ok());
     }
 
-    void update(
-            const Eigen::VectorXd &low,
-            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &A,
-            const Eigen::VectorXd &upp
-    ) {
+    void update(const QPConstraints &qp_constraints) {
         absl::Status status;
-
+        auto [low, A, upp] = qp_constraints;
         if (!(status = solver.UpdateConstraintMatrix(A)).ok()) {
             throw std::invalid_argument(status.ToString());
         }
