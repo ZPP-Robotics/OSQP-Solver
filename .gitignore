@@ -1,3 +1,17 @@
-**
+# Ignore Everything
+*
+
+# But not specific file-types
 !*.cpp
 !*.h
+!CMakeLists.txt
+!.gitignore
+
+# Or directories
+!src/
+!src/*
+!src/**/*
+
+!test/
+!test/*
+!test/**/*

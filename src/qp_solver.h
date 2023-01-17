@@ -1,9 +1,5 @@
-//
-// Created by mat on 20/11/2022.
-//
-
-#ifndef TEST3_QP_SOLVER_H
-#define TEST3_QP_SOLVER_H
+#ifndef QP_SOLVER_H
+#define QP_SOLVER_H
 
 #include <iostream>
 
@@ -18,11 +14,12 @@ class QPSolver {
 public:
 
     QPSolver(
-            Eigen::VectorXd low,
-            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> A,
-            Eigen::VectorXd upp,
-            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> P
+            const Eigen::VectorXd &low,
+            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &A,
+            const Eigen::VectorXd &upp,
+            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &P
     ) {
+
         OsqpInstance instance;
 
         instance.constraint_matrix = A;
@@ -38,9 +35,9 @@ public:
     }
 
     void update(
-            Eigen::VectorXd low,
-            Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> A,
-            Eigen::VectorXd upp
+            const Eigen::VectorXd &low,
+            const Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> &A,
+            const Eigen::VectorXd &upp
     ) {
         absl::Status status;
 
@@ -64,4 +61,4 @@ private:
 
 };
 
-#endif //TEST3_QP_SOLVER_H
+#endif //QP_SOLVER_H

@@ -1,3 +1,4 @@
+/*
 // Copyright 2021 DeepMind Technologies Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -209,3 +210,4 @@ int main(int argc, const char** argv) {
 
     return 1;
 }
+*/
