@@ -42,6 +42,12 @@ public:
         }
     }
 
+    void setWarmStart(const QPVector& primal_vector) {
+        auto status = solver.SetPrimalWarmStart(primal_vector);
+        std::cout << "STATUS: " << status.ToString() << std::endl;
+        assert(status.ok());
+    }
+
     pair<OsqpExitCode, Eigen::VectorXd> solve() {
         OsqpExitCode exit_code = solver.Solve();
         return {exit_code, solver.primal_solution()};

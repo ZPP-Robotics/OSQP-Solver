@@ -3,6 +3,8 @@
 
 #include <cassert>
 
+#include <armadillo>
+
 #include "utils.h"
 #include "constraints.h"
 #include "osqp++.h"
@@ -18,7 +20,8 @@ class ConstraintBuilder {
     using Factor = std::pair<size_t, double>;
     using matrix_cell = Eigen::Triplet<double, size_t>;
 
-    static constexpr const size_t DYNAMICS_DERIVATIVES = 3;
+    // position + velocity + acceleration + linearized constraints for obstacles avoidance
+    static constexpr const size_t DYNAMICS_DERIVATIVES = 4;
 
 public:
 
@@ -78,6 +81,40 @@ public:
         return *this;
     }
 
+    ConstraintBuilder &zObstacles(const std::vector<std::pair<size_t, Constraint<N_DIM>>> z_obstacles_geq, const QPVector& trajectory) {
+        for(auto& [i, c] : z_obstacles_geq) {
+            zObstacle(i, c, trajectory);
+        }
+        return *this;
+    }
+
+    ConstraintBuilder &zObstacle(size_t i, Constraint<N_DIM> c, const QPVector& trajectory) {
+        // For now assume that c has only lowe bound and upper bound = INF
+        assert(i < waypoints - 1);
+        auto traj_offset = N_DIM * i;
+        auto basePos = nthPos(i);
+        auto baseZObstacle = nthZObstacle(i);
+
+        double jacobian[3 * 6];
+        double q[6]{trajectory[traj_offset], trajectory[traj_offset + 1], trajectory[traj_offset + 2],
+                    trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]}; 
+        joint_jacobian(jacobian, q);
+        arma::mat jacobian_arma = arma::mat{jacobian, 3, 6};
+        arma::vec jacobian_xyz = jacobian_arma * arma::vec(q, 6);
+
+        auto forward_xyz = forward_kinematics(q);
+
+        c.first->at(0) = c.first->at(0) - std::get<2>(forward_xyz) + jacobian_xyz[2];
+        for(int j = 0; j < N_DIM; j++) {
+            addConstraint(userConstraintOffset + baseZObstacle,
+                          {
+                                  {basePos + j, jacobian[2 * 6 + j]}
+                          },
+                          getConstraintForNthDim(0, c));
+        }
+        return *this;
+    }
+
     QPConstraints build() {
         QPMatrix A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
@@ -115,6 +152,11 @@ private:
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
         assert(i < waypoints - 1);
         return waypoints * N_DIM * 2 + i * N_DIM;
+    }
+
+    [[nodiscard]] size_t nthZObstacle(size_t i) const {
+        assert(i < waypoints - 1);
+        return waypoints * N_DIM * 3 + i * N_DIM;
     }
 
     std::pair<std::optional<double>, std::optional<double>>

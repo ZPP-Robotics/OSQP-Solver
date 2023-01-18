@@ -46,6 +46,13 @@ namespace constraints {
     }
 
     template<size_t N>
+    Constraint<N> zObstacleGeq(double z) {
+        auto inf_inf_z = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
+        inf_inf_z.first->at(0) = z;
+        return inf_inf_z;
+    }
+
+    template<size_t N>
     const Constraint<N> ANY = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
 
     template<size_t N>
