@@ -100,11 +100,16 @@ public:
                     trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]}; 
         joint_jacobian(jacobian, q);
         arma::mat jacobian_arma = arma::mat{jacobian, 3, 6};
-        arma::vec jacobian_xyz = jacobian_arma * arma::vec(q, 6);
+        arma::vec q_arma{trajectory[traj_offset], trajectory[traj_offset + 1], trajectory[traj_offset + 2],
+                    trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]};
+        arma::vec xyz = jacobian_arma * q_arma;
 
         auto forward_xyz = forward_kinematics(q);
+        
+        std::cout << "before C FIRST: " << c.first->at(0) << "\n";
+        c.first->at(0) = c.first->at(0) - std::get<2>(forward_xyz) + xyz[2];
+        std::cout << "after C FIRST: " << c.first->at(0) << "\n";
 
-        c.first->at(0) = c.first->at(0) - std::get<2>(forward_xyz) + jacobian_xyz[2];
         for(int j = 0; j < N_DIM; j++) {
             addConstraint(userConstraintOffset + baseZObstacle,
                           {
