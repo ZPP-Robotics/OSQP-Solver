@@ -7,7 +7,7 @@
 #include "gomp-solver.h"
 #include <chrono>
 
-constexpr const size_t WAYPOINTS = 1000;
+constexpr const size_t WAYPOINTS = 20;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -26,17 +26,17 @@ int main() {
 
     GOMPSolver<DIMS> s{WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-0.01), of<DIMS>(0.01)),
-                       constraints::inRange<DIMS>(of<DIMS>(-0.1), of<DIMS>(0.1)),
+                       constraints::inRange<DIMS>(of<DIMS>(-10), of<DIMS>(10)),
+                       constraints::inRange<DIMS>(of<DIMS>(-10), of<DIMS>(10)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                     //    {}};
-                       {{500, constraints::zObstacleGeq<DIMS>(0.5)}}};
+                       {{10, constraints::zObstacleGeq<DIMS>(0.5)}}};
 
 
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
-        Point start_pos_gt(-0.13, 0.82, 0.063);
+        Point start_pos_gt(-0.5, -0.5, 0);
         Point   end_pos_gt(0.5, 0.5, 0);
         auto [e, b1] = s.run(start_pos_gt.toCtrl(), end_pos_gt.toCtrl());
 
@@ -82,7 +82,7 @@ int main() {
         Point start_pos_found = Ctrl(b1[0], b1[1], b1[2], b1[3], b1[4], b1[5]).toPoint();
         auto offset = DIMS * (WAYPOINTS - 1);
         Point end_pos_found = Ctrl(b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]).toPoint();
-        offset = DIMS * 500;
+        offset = DIMS * 10;
         Point mid_pos_found = Ctrl(b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]).toPoint();
 
         std::cout << "\n\n Ground true point: " << start_pos_gt << " point -> ctrl -> point: " << start_pos_gt.toCtrl().toPoint() << "= decoded point \n\n";

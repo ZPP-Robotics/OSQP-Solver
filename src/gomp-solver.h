@@ -35,14 +35,12 @@ public:
         auto last_code = ExitCode::kUnknown;
         QPVector last_solution{};
 
-        for (size_t t = max_waypoints; t >= 2; --t) {
+        for(auto i = 0; i < 200; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
-                if (t == max_waypoints) {
-                    // There are no solutions.
-                    last_solution = solution;
-                    last_code = exit_code;
-                }
+                // // There are no solutions.
+                last_solution = solution;
+                last_code = exit_code;
                 break;
             }
 
@@ -50,13 +48,33 @@ public:
             last_solution = solution;
             qp_solver.update(
                     constraints
-                            .position(t - 2, end_pos.toConstraintEq())
-                            .velocity(t - 2, EQ_ZERO<N_DIM>)
-                            .acceleration(t - 2, EQ_ZERO<N_DIM>)
                             .zObstacles(z_obstacles_geq, solution)
                             .build()
             );
         }
+
+        // for (size_t t = max_waypoints; t >= 2; --t) {
+        //     auto [exit_code, solution] = qp_solver.solve();
+        //     if (exit_code != ExitCode::kOptimal) {
+        //         if (t == max_waypoints) {
+        //             // There are no solutions.
+        //             last_solution = solution;
+        //             last_code = exit_code;
+        //         }
+        //         break;
+        //     }
+
+        //     last_code = ExitCode::kOptimal;
+        //     last_solution = solution;
+        //     qp_solver.update(
+        //             constraints
+        //                     .position(t - 2, end_pos.toConstraintEq())
+        //                     .velocity(t - 2, EQ_ZERO<N_DIM>)
+        //                     .acceleration(t - 2, EQ_ZERO<N_DIM>)
+        //                     .zObstacles(z_obstacles_geq, solution)
+        //                     .build()
+        //     );
+        // }
 
         return {last_code, last_solution};
     }
