@@ -6,12 +6,13 @@
 #include "osqp-wrapper.h"
 #include "gomp-solver.h"
 #include <chrono>
+#include <fstream>
 
 constexpr const size_t WAYPOINTS = 20;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
-constexpr const double TIME_STEP = 0.1;
+constexpr const double TIME_STEP = 1;
 
 using namespace Eigen;
 using namespace osqp;
@@ -26,8 +27,8 @@ int main() {
 
     GOMPSolver<DIMS> s{WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-10), of<DIMS>(10)),
-                       constraints::inRange<DIMS>(of<DIMS>(-10), of<DIMS>(10)),
+                       constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
+                       constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                     //    {}};
                        {{10, constraints::zObstacleGeq<DIMS>(0.5)}}};
@@ -36,48 +37,19 @@ int main() {
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
-        Point start_pos_gt(-0.5, -0.5, 0);
-        Point   end_pos_gt(0.5, 0.5, 0);
-        auto [e, b1] = s.run(start_pos_gt.toCtrl(), end_pos_gt.toCtrl());
+        Point start_pos_gt = Ctrl(0,0,0,0,0,0).toPoint();
+        Point   end_pos_gt = Ctrl(-M_PI,0,0,0,0,0).toPoint();
+        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI,0,0,0,0,0));
 
-        auto finish = std::chrono::high_resolution_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-        std::cout << "Time iter: " << milliseconds.count() << "ms\n";
-
-        std::cout << "pos dim1: \n";
-        for (int j = 0; j < WAYPOINTS; ++j) {
-            cout << b1[DIMS * j] << ", ";
+        auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
+        auto output_file_xyz = ofstream("output_trajectory_xyz.data");
+        for(auto i = 0; i < WAYPOINTS; i++) {
+            output_file_ctrl << b1[DIMS * i] << " " << b1[DIMS * i + 1] << " " << b1[DIMS * i + 2] << " " << b1[DIMS * i + 3] << " " << b1[DIMS * i + 4] << " " << b1[DIMS * i + 5] << "\n";
+            Point point =  Ctrl(b1[DIMS * i + 0], b1[DIMS * i + 1], b1[DIMS * i + 2], b1[DIMS * i + 3], b1[DIMS * i + 4], b1[DIMS * i + 5]).toPoint();
+            output_file_xyz << point.x << " " << point.y << " " << point.z << "\n";
         }
-        cout << endl;
-        cout << endl;
-        std::cout << "vel dim1: \n";
-        for (int j = 0; j < WAYPOINTS; ++j) {
-            cout << b1[DIMS * j + WAYPOINTS * DIMS] << ", ";
-        }
-        cout << endl;
-        cout << endl;
-        std::cout << "acc dim1: \n";
-        for (int j = 0; j + 1 < WAYPOINTS; ++j) {
-            cout << b1[DIMS * (j + 1) + WAYPOINTS * DIMS] - b1[DIMS * j + WAYPOINTS * DIMS] << ", ";
-        }
-        cout << endl;
-        cout << endl;
-        std::cout << "pos dim2: \n";
-        for (int j = 0; j < WAYPOINTS; ++j) {
-            cout << b1[DIMS * j + 1] << ", ";
-        }
-        cout << endl;
-        cout << endl;
-        std::cout << "vel dim2: \n";
-        for (int j = 0; j < WAYPOINTS; ++j) {
-            cout << b1[DIMS * j + WAYPOINTS * DIMS + 1] << ", ";
-        }
-        cout << endl;
-        cout << endl;
-        std::cout << "acc dim2: \n";
-        for (int j = 0; j + 1 < WAYPOINTS; ++j) {
-            cout << b1[DIMS * (j + 1) + WAYPOINTS * DIMS + 1] - b1[DIMS * j + WAYPOINTS * DIMS + 1] << ", ";
-        }
+        output_file_ctrl.close();
+        output_file_xyz.close();
 
         Point start_pos_found = Ctrl(b1[0], b1[1], b1[2], b1[3], b1[4], b1[5]).toPoint();
         auto offset = DIMS * (WAYPOINTS - 1);
@@ -85,8 +57,7 @@ int main() {
         offset = DIMS * 10;
         Point mid_pos_found = Ctrl(b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]).toPoint();
 
-        std::cout << "\n\n Ground true point: " << start_pos_gt << " point -> ctrl -> point: " << start_pos_gt.toCtrl().toPoint() << "= decoded point \n\n";
-        std::cout << "\n\n";
+        std::cout << "\n\nSummary:\n";
         std::cout << "Ground true starting position: " << start_pos_gt << " starting position after optimization: " << start_pos_found << "\n";
         std::cout << "Middle position after optimization: "   << mid_pos_found << "\n";
         std::cout << "Ground true end position: "      << end_pos_gt   << " end position after optimization: "      << end_pos_found   << "\n\n";

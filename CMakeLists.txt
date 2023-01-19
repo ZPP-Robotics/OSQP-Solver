@@ -17,7 +17,7 @@ include(FetchContent)
 FetchContent_Declare(
         osqpcpp
         # Specify the commit you depend on and update it regularly.
-        URL https://github.com/google/osqp-cpp/archive/8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c.zip
+        GIT_REPOSITORY https://github.com/google/osqp-cpp.git
 )
 FetchContent_MakeAvailable(osqpcpp)
 
