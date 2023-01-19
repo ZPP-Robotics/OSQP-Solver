@@ -7,8 +7,6 @@
 template<size_t N_DIM>
 class GOMPSolver {
 
-    // using Position = std::array<double, N_DIM>;
-
 public:
 
     GOMPSolver(size_t waypoints, double time_step,
@@ -35,7 +33,7 @@ public:
         auto last_code = ExitCode::kUnknown;
         QPVector last_solution{};
 
-        for(auto i = 0; i < 200; i++) {
+        for(auto i = 0; i < 1; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // // There are no solutions.

@@ -21,9 +21,13 @@ public:
         instance.objective_matrix = P;
 
         instance.objective_vector.resize(A.cols());
+        for(auto i = 0; i < A.cols(); i++) {
+            instance.objective_vector(i) = 0;
+        }
 
         instance.lower_bounds = l;
         instance.upper_bounds = u;
+
 
         OsqpSettings settings;
         auto status = solver.Init(instance, settings);
