@@ -17,13 +17,13 @@ const size_t DEFAULT_WAYPOINTS_CNT = 2;
  *
  */
 
-void f(std::array<std::optional<double>, 3> r) {
-
-}
-
 void expect_equality_constraint(size_t idx, const Eigen::VectorXd &low, const Eigen::VectorXd &upp) {
     EXPECT_EQ(low[idx], 0);
     EXPECT_EQ(upp[idx], 0);
+}
+
+void expect_vectors_eq(arma::vec3 a, arma::vec3 b) {
+    EXPECT_EQ(arma::norm(a - b), 0);
 }
 
 TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
@@ -51,4 +51,24 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
 
     f({3, 2, 1});
     std::array<std::optional<double>, 3> a = {1, 2, 3};
+}
+
+TEST(LineUtilTest, XAxis) {
+    Line line{{2,0, 0}, {1, 1, 1}};
+
+    EXPECT_EQ(arma::norm(line.distanceVec({2, 1, 1})), 0);
+    EXPECT_EQ(arma::norm(line.distanceVec({1, 2, 1})), 1);
+    EXPECT_EQ(arma::norm(line.distanceVec({1, 1, 2})), 1);
+    EXPECT_EQ(arma::norm(line.distanceVec({1, 2, 2})), sqrt(2));
+
+    EXPECT_EQ(line.distanceXY({2, 1, 1}), 0);
+    EXPECT_EQ(line.distanceXY({1, 2, 1}), 1);
+    EXPECT_EQ(line.distanceXY({1, 1, 2}), 0);
+
+    arma::vec3 p_real = arma::vec3{1.1, 1.2, 1.3};
+    arma::vec3 p_expected = arma::vec3{1.1, 1, 1};
+    // should return closest point on the line to the given one.
+    arma::vec3 p_act = line[p_real];
+
+    expect_vectors_eq(p_act, p_expected);
 }
