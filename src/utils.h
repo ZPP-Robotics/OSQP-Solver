@@ -136,19 +136,23 @@ QPVector linspace(const Ctrl &a, const Ctrl &b, const size_t n_steps) {
     return acc;
 }
 
-class Line {
+class HorizontalLine {
 
     /**
      * A - point on the line
-     * D - direction of line (unit length)
+     * D - direction of line (horizontal & unit length)
      */
     const arma::vec3 D;
     const arma::vec3 A;
 
+    static arma::vec3 fromXY(arma::vec2 v) {
+        return {v[0], v[1], 0};
+    }
+
 public:
 
-    Line(const arma::vec3 &direction, const arma::vec3 &point)
-            : D(direction / arma::norm(direction)), A(point) {}
+    HorizontalLine(const arma::vec2 &direction, const arma::vec3 &point)
+            : D(fromXY(direction) / arma::norm(direction)), A(point) {}
 
     /**
      * P - some point

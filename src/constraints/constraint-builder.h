@@ -81,9 +81,26 @@ public:
         return *this;
     }
 
-    ConstraintBuilder &zObstacles(const std::vector<std::pair<size_t, Constraint<N_DIM>>> z_obstacles_geq, const QPVector& trajectory) {
-        for(auto& [i, c] : z_obstacles_geq) {
-            zObstacle(i, c, trajectory);
+    ConstraintBuilder &zObstacles(
+            const std::vector<HorizontalLine> &z_obstacles_geq,
+            const QPVector &trajectory) {
+        for (size_t j = 0; j < z_obstacles_geq.size(); ++j) {
+            const HorizontalLine& line = z_obstacles_geq[j];
+
+            for (size_t i = 0; i < waypoints; ++i) {
+                double q[6];
+                size_t base_pos = nthPos(i);
+                std::copy_n(trajectory.begin() + base_pos, 6, q);
+                auto [x, y, z] = forward_kinematics(q);
+
+                Constraint<6> c = ANY<6>;
+                if (line.distanceXY({x, y, z}) < 1 / waypoints) {
+                    // set first lower bound to obstacle_z - endeffector_z
+                    c.first.value()[0] = line[{x, y, z}][2] - z;
+                }
+
+                zObstacle(j * waypoints + i, c, trajectory);
+            }
         }
         return *this;
     }
@@ -98,15 +115,13 @@ public:
         double jacobian[3 * 6]{0};
 
         double q[6] = {trajectory[traj_offset], trajectory[traj_offset + 1], trajectory[traj_offset + 2],
-                    trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]}; 
+                    trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]};
 
         joint_jacobian(jacobian, q);
         arma::mat jacobian_arma = arma::mat{jacobian, 3, 6};
         arma::vec q_arma{trajectory[traj_offset], trajectory[traj_offset + 1], trajectory[traj_offset + 2],
                     trajectory[traj_offset + 3], trajectory[traj_offset + 4], trajectory[traj_offset + 5]};
         arma::vec xyz = jacobian_arma * q_arma;
-
-        auto forward_xyz = forward_kinematics(q);
 
         for(int j = 0; j < N_DIM; j++) {
             addConstraint(userConstraintOffset + baseZObstacle,

@@ -48,13 +48,10 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
         EXPECT_EQ(A.coeff(i, i + 1), -1); // (-1) * q_{i + 1}
         EXPECT_EQ(A.coeff(i, DEFAULT_WAYPOINTS_CNT + i), DEFAULT_TIME_STEP); // v_i * DEFAULT_TIME_STEP
     }
-
-    f({3, 2, 1});
-    std::array<std::optional<double>, 3> a = {1, 2, 3};
 }
 
 TEST(LineUtilTest, XAxis) {
-    Line line{{2,0, 0}, {1, 1, 1}};
+    HorizontalLine line{{2, 0}, {1, 1, 1}};
 
     EXPECT_EQ(arma::norm(line.distanceVec({2, 1, 1})), 0);
     EXPECT_EQ(arma::norm(line.distanceVec({1, 2, 1})), 1);
