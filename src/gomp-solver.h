@@ -1,6 +1,8 @@
 #ifndef GOMP_SOLVER_H
 #define GOMP_SOLVER_H
 
+#include <utility>
+
 #include "constraints/constraint-builder.h"
 #include "osqp-wrapper.h"
 
@@ -14,14 +16,14 @@ public:
                Constraint<N_DIM> vel_con,
                Constraint<N_DIM> acc_con,
                QPMatrix &&P,
-               std::vector<std::pair<size_t, Constraint<N_DIM>>> z_obstacles_geq)
+               std::vector<HorizontalLine> z_obstacles_geq)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
               vel_con(vel_con),
               acc_con(acc_con),
               problem_matrix(P),
-              z_obstacles_geq(z_obstacles_geq) {
+              z_obstacles_geq(std::move(z_obstacles_geq)) {
         assert(max_waypoints >= 2);
     }
 

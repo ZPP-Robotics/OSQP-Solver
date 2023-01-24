@@ -31,7 +31,7 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                     //    {}};
-                       {{10, constraints::zObstacleGeq<DIMS>(0.5)}}};
+                       {HorizontalLine{{1, 1}, {0.2, 0.5, 0.3}}}};
 
 
     for (int i = 0; i < 1; ++i) {
