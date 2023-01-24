@@ -117,7 +117,7 @@ private:
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;
     const QPMatrix problem_matrix;
-    const std::vector<std::pair<size_t, Constraint<N_DIM>>> z_obstacles_geq;
+    const std::vector<HorizontalLine> z_obstacles_geq;
 
     std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl& start_pos, const Ctrl& end_pos) {
         // Warm start as described in paper
