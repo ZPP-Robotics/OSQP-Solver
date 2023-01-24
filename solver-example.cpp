@@ -31,15 +31,15 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                     //    {}};
-                       {HorizontalLine{{1, 1}, {0.2, 0.5, 0.3}}}};
+                       {HorizontalLine{{0, 1}, {0, 0, 0.3}}}};
 
 
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = Ctrl(0,0,0,0,0,0).toPoint();
-        Point   end_pos_gt = Ctrl(-M_PI,0,0,0,0,0).toPoint();
-        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI,0,0,0,0,0));
+        Point   end_pos_gt = Ctrl(-M_PI * 2 / 3,0,0,0,0,0).toPoint();
+        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI * 3 / 4,0,0,0,0,0));
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
