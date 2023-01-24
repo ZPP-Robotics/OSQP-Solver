@@ -35,7 +35,7 @@ public:
         auto last_code = ExitCode::kUnknown;
         QPVector last_solution{};
 
-        for(auto i = 0; i < 1; i++) {
+        for(auto i = 0; i < 30; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // // There are no solutions.
