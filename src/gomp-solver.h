@@ -3,11 +3,13 @@
 
 #include "constraints/constraint-builder.h"
 #include "osqp-wrapper.h"
+#include "ik/analytical_ik.h"
 
 template<size_t N_DIM>
 class GOMPSolver {
 
     using Position = std::array<double, N_DIM>;
+    using Coordinates = std::tuple<double, double, double>;
 
 public:
 
@@ -58,6 +60,19 @@ public:
         return {last_code, last_solution};
     }
 
+    std::pair<ExitCode, QPVector> run(Coordinates start_pos, Coordinates end_pos) {
+        double q_sols_start[8 * 6];
+        double q_sols_end[8 * 6];
+        int num_sols_start = inverse_kinematics(q_sols_start, std::get<0>(start_pos), std::get<1>(start_pos), std::get<2>(start_pos));
+        int num_sols_end = inverse_kinematics(q_sols_end, std::get<0>(end_pos), std::get<1>(end_pos), std::get<2>(end_pos));
+
+        Position start = choose_solution(q_sols_start);
+        Position end = choose_solution(q_sols_end);
+
+        return run(start, end);
+    }
+
+
 private:
 
     const double time_step;
@@ -66,6 +81,10 @@ private:
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;
     const QPMatrix problem_matrix;
+
+    Position choose_solution(double *q_sols) {
+        std::array<double, N_DIM> = 
+    }
 
     ConstraintBuilder<N_DIM> initConstraints(Position start_pos, Position end_pos) {
         // Constrain all positions, velocities, accelerations with
