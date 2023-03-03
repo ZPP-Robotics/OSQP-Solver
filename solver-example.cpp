@@ -38,8 +38,8 @@ int main() {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = Ctrl(0,0,0,0,0,0).toPoint();
-        Point   end_pos_gt = Ctrl(-M_PI * 2 / 3,0,0,0,0,0).toPoint();
-        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI * 3 / 4,0,0,0,0,0));
+        Point   end_pos_gt = Ctrl(-M_PI,0,0,0,0,0).toPoint();
+        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI,0,0,0,0,0));
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
