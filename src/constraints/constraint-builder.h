@@ -14,6 +14,17 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrix, QPVector>;
 
+namespace {
+    using forward_kinematics_t = std::function<decltype(forward_kinematics)>; 
+    using jacobian_t = std::function<decltype(joint_jacobian)>;
+
+    using fj_pair_t = std::pair<forward_kinematics_t, jacobian_t>;
+    const static std::array<fj_pair_t, 2> used_fj_pairs={{
+        {&forward_kinematics, &joint_jacobian}, 
+        {&forward_kinematics_elbow_joint, &jacobian_elbow_joint}
+        }};
+}
+
 template<size_t N_DIM>
 class ConstraintBuilder {
 
@@ -84,34 +95,48 @@ public:
     ConstraintBuilder &zObstacles(
             const std::vector<HorizontalLine> &z_obstacles_geq,
             const QPVector &trajectory) {
+
         for (size_t j = 0; j < z_obstacles_geq.size(); ++j) {
+
             const HorizontalLine &line = z_obstacles_geq[j];
 
-            for (size_t i = 0; i < waypoints; ++i) {
-                double q[6];
-                double jacobian[3 * 6];
-                size_t base_pos = nthPos(i);
-                std::copy_n(trajectory.begin() + base_pos, 6, q);
+            for(int fj_pair_idx = 0; fj_pair_idx < used_fj_pairs.size(); ++fj_pair_idx) {
+                const auto& [fk_fun, jacob_fun] = used_fj_pairs[fj_pair_idx];
 
-                auto [x, y, z] = forward_kinematics(q);
-                joint_jacobian(jacobian, q);
+                for (size_t i = 0; i < waypoints; ++i) {
 
-                double lowerBound = -INF;
-                // overcome obstacle with some space between (0.2)
-                if (line.distanceXY({x, y, z}) < 1.0 / waypoints) {
-                    // set first lower bound to obstacle_z - endeffector_z + J_k dot q_k
-                    lowerBound = line[{x, y, z}][2] - z + 0.2;
-                    for (int k = 0; k < 6; ++k) {
-                        lowerBound += jacobian[2 * 6 + k] * q[k];
+                    double q[6];
+                    double jacobian[3 * 6];
+                    size_t base_pos = nthPos(i);
+                    std::copy_n(trajectory.begin() + base_pos, 6, q);
+
+                    auto [x, y, z] = fk_fun(q);
+                    jacob_fun(jacobian, q);
+
+                    double lowerBound = -INF;
+                    // overcome obstacle with some space between (0.05)
+                    if (line.distanceXY({x, y, z}) < 1.0 / waypoints) {
+                        // set first lower bound to obstacle_z - endeffector_z + J_k dot q_k
+                        lowerBound = line[{x, y, z}][2] - z + 0.1;
+                        for (int k = 0; k < 6; ++k) {
+                            lowerBound += jacobian[2 * 6 + k] * q[k];
+                        }
                     }
-                }
 
-                for (int k = 0; k < 6; ++k) {
-                    addConstraint(userConstraintOffset + N_DIM * waypoints * 3 + j * waypoints + i,
-                                  {
-                                          {base_pos + k, jacobian[2 * 6 + k]}
-                                  },
-                                  {lowerBound, INF});
+                    for (int k = 0; k < 6; ++k) {
+                        const auto constraint_idx = 
+                            userConstraintOffset + 
+                            N_DIM * waypoints * 3 + 
+                            j * waypoints * used_fj_pairs.size() + 
+                            fj_pair_idx * waypoints +
+                            i;
+                        addConstraint(constraint_idx,
+                                    {
+                                            {base_pos + k, jacobian[2 * 6 + k]}
+                                    },
+                                    {lowerBound, INF});
+                    }
+                
                 }
             }
         }
@@ -219,7 +244,6 @@ private:
             }
         }
     }
-
 };
 
 #endif //CONSTRAINT_BUILDER_H
