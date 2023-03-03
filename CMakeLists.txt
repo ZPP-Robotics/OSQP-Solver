@@ -46,31 +46,3 @@ include(GoogleTest)
 add_executable(tests test/test.cpp ${SOURCES})
 target_link_libraries(tests qp_solver gtest gmock gtest_main)
 
-
-set(MUJOCO_PATH /Users/mat/Documents/mujoco)
-set(DOWNLOADED_LIBS /opt/homebrew/)
-
-list(APPEND CMAKE_PREFIX_PATH ${DOWNLOADED_LIBS})
-list(APPEND CMAKE_PREFIX_PATH ${MUJOCO_PATH})
-
-find_library(ARMA_LIB armadillo)
-find_path(ARMA_INCLUDE_DIR armadillo)
-
-find_library(GLFW_LIB glfw)
-find_path(GLFW_INCLUDE_DIR glfw)
-
-find_library(MUJOCO_LIB mujoco)
-find_path(MUJOCO_INCLUDE_DIR mujoco)
-
-# Mujoco test executable
-add_executable(mujocotest main.cpp)
-
-target_link_libraries(mujocotest ${MUJOCO_LIB} ${ARMA_LIB} ${GLFW_LIB})
-target_include_directories(mujocotest PRIVATE ${MUJOCO_INCLUDE_DIR} ${ARMA_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
-
-if(APPLE)
-    set_target_properties(mujocotest PROPERTIES LINK_OPTIONS "-Wl,-rpath,${MUJOCO_PATH}")
-elseif(UNIX)
-    target_include_directories(mujocotest PRIVATE ${MUJOCO_INCLUDE_DIR})
-endif()
-
