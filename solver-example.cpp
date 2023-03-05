@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <tuple>
-#include "constraints/constraint-builder.h"
+#include "src/constraints/constraint-builder.h"
 #include "utils.h"
 #include "osqp-wrapper.h"
 #include "gomp-solver.h"
