@@ -10,9 +10,6 @@ file(GLOB SOURCES
     ../Kinematics-UR5e-arm/src/analytical_ik.cpp
 )
 
-find_library(ARMA_LIB armadillo)
-find_path(ARMA_INCLUDE_DIR armadillo)
-
 include(FetchContent)
 FetchContent_Declare(
         osqpcpp
@@ -21,11 +18,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(osqpcpp)
 
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+
 # ---- Build header-only library qp_solver
 file(GLOB_RECURSE sources src/*.h)
 add_library(qp_solver INTERFACE ${sources})
-target_link_libraries(qp_solver INTERFACE osqp-cpp ${ARMA_LIB})
-target_include_directories(qp_solver INTERFACE src ${ARMA_INCLUDE_DIR})
+target_link_libraries(qp_solver INTERFACE osqp-cpp Eigen3::Eigen)
+target_include_directories(qp_solver INTERFACE src)
 
 
 # ---- Build usage example

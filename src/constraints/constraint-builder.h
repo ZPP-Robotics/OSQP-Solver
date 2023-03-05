@@ -3,8 +3,6 @@
 
 #include <cassert>
 
-#include <armadillo>
-
 #include "utils.h"
 #include "constraints.h"
 #include "osqp++.h"

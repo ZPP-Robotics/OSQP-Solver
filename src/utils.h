@@ -9,11 +9,11 @@
 #include "constraints/constraints.h"
 #include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
 
-#include <armadillo>
-
 using ExitCode = osqp::OsqpExitCode;
 using QPMatrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
 using QPVector = Eigen::VectorXd;
+using QPVector2d = Eigen::Vector2d;
+using QPVector3d = Eigen::Vector3d;
 
 /**
  * Creates nxn sparse matrix M so that
@@ -142,17 +142,17 @@ class HorizontalLine {
      * A - point on the line
      * D - direction of line (horizontal & unit length)
      */
-    const arma::vec3 D;
-    const arma::vec3 A;
+    const QPVector3d D;
+    const QPVector3d A;
 
-    static arma::vec3 fromXY(arma::vec2 v) {
+    static QPVector3d fromXY(QPVector2d v) {
         return {v[0], v[1], 0};
     }
 
 public:
 
-    HorizontalLine(const arma::vec2 &direction, const arma::vec3 &point)
-            : D(fromXY(direction) / arma::norm(direction)), A(point) {}
+    HorizontalLine(const QPVector2d &direction, const QPVector3d &point)
+            : D(fromXY(direction) / direction.norm()), A(point) {}
 
     /**
      * P - some point
@@ -170,23 +170,23 @@ public:
      * X == A + ((P-A) dot D)D
      * Returns perpendicular: X-P
      */
-    [[nodiscard]] arma::vec3 distanceVec(const arma::vec3 &P) const {
-        arma::vec3 X = A + arma::dot(P - A, D) * D;
+    [[nodiscard]] QPVector3d distanceVec(const QPVector3d &P) const {
+        QPVector3d X = A + (P - A).dot(D) * D;
         return X - P;
     }
 
     /**
      * Return "horizontal" distance from P to line.
      */
-    [[nodiscard]] double distanceXY(const arma::vec3 &P) const {
-        arma::vec3 dist = distanceVec(P);
-        return arma::norm(arma::vec2{dist[0], dist[1]});
+    [[nodiscard]] double distanceXY(const QPVector3d &P) const {
+        QPVector3d dist = distanceVec(P);
+        return QPVector2d{dist[0], dist[1]}.norm();
     }
 
     /**
      * Return point on the line closest to P.
      */
-    arma::vec3 operator[](const arma::vec3 &P) const {
+    QPVector3d operator[](const QPVector3d &P) const {
         return P + distanceVec(P);
     };
 
