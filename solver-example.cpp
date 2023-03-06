@@ -26,7 +26,7 @@ constexpr double Q_MAX =   M_PI;
 
 int main() {
 
-    std::map<size_t, fj_pair_t> m;
+    std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
     m[0] = {&forward_kinematics, &joint_jacobian};
     m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
 
