@@ -42,25 +42,25 @@ int main() {
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
-        Point start_pos_gt = Ctrl(0,0,0,0,0,0).toPoint();
-        Point   end_pos_gt = Ctrl(-M_PI,0,0,0,0,0).toPoint();
-        auto [e, b1] = s.run(Ctrl(0,0,0,0,0,0), Ctrl(-M_PI,0,0,0,0,0));
+        Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({-M_PI,0,0,0,0,0});
+        auto [e, b1] = s.run({0,0,0,0,0,0}, {-M_PI,0,0,0,0,0});
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
         for(auto i = 0; i < WAYPOINTS; i++) {
             output_file_ctrl << b1[DIMS * i] << " " << b1[DIMS * i + 1] << " " << b1[DIMS * i + 2] << " " << b1[DIMS * i + 3] << " " << b1[DIMS * i + 4] << " " << b1[DIMS * i + 5] << "\n";
-            Point point =  Ctrl(b1[DIMS * i + 0], b1[DIMS * i + 1], b1[DIMS * i + 2], b1[DIMS * i + 3], b1[DIMS * i + 4], b1[DIMS * i + 5]).toPoint();
-            output_file_xyz << point.x << " " << point.y << " " << point.z << "\n";
+            Point point = toPoint<6>({b1[DIMS * i + 0], b1[DIMS * i + 1], b1[DIMS * i + 2], b1[DIMS * i + 3], b1[DIMS * i + 4], b1[DIMS * i + 5]});
+            output_file_xyz << point << "\n";
         }
         output_file_ctrl.close();
         output_file_xyz.close();
 
-        Point start_pos_found = Ctrl(b1[0], b1[1], b1[2], b1[3], b1[4], b1[5]).toPoint();
+        Point start_pos_found = toPoint<6>({b1[0], b1[1], b1[2], b1[3], b1[4], b1[5]});
         auto offset = DIMS * (WAYPOINTS - 1);
-        Point end_pos_found = Ctrl(b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]).toPoint();
+        Point end_pos_found = toPoint<6>({b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]});
         offset = DIMS * 10;
-        Point mid_pos_found = Ctrl(b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]).toPoint();
+        Point mid_pos_found = toPoint<6>({b1[offset + 0], b1[offset + 1], b1[offset + 2], b1[offset + 3], b1[offset + 4], b1[offset + 5]});
 
         std::cout << "\n\nSummary:\n";
         std::cout << "Ground true starting position: " << start_pos_gt << " starting position after optimization: " << start_pos_found << "\n";
