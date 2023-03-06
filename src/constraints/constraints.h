@@ -4,6 +4,7 @@
 #include <utility>
 #include <optional>
 #include <limits>
+#include <Eigen/Core>
 
 namespace constraints {
 
