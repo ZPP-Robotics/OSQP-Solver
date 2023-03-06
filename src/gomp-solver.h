@@ -15,7 +15,7 @@ public:
                Constraint<N_DIM> pos_con,
                Constraint<N_DIM> vel_con,
                Constraint<N_DIM> acc_con,
-               QPMatrix &&P,
+               QPMatrixSparse &&P,
                std::vector<HorizontalLine> z_obstacles_geq)
             : max_waypoints(waypoints),
               time_step(time_step),
@@ -118,7 +118,7 @@ private:
     const Constraint<N_DIM> pos_con;
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;
-    const QPMatrix problem_matrix;
+    const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> z_obstacles_geq;
 
     std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl& start_pos, const Ctrl& end_pos) {

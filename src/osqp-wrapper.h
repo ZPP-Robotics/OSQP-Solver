@@ -13,7 +13,7 @@ class QPSolver {
 
 public:
 
-    QPSolver(const QPConstraints &c, const QPMatrix &P) {
+    QPSolver(const QPConstraints &c, const QPMatrixSparse &P) {
         auto &[l, A, u] = c;
         OsqpInstance instance;
 

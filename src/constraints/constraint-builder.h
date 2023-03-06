@@ -10,7 +10,7 @@
 using namespace constraints;
 
 // <lower_bounds, constraint_matrix, upper_bounds>
-using QPConstraints = std::tuple<QPVector, QPMatrix, QPVector>;
+using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
 namespace {
     using forward_kinematics_t = std::function<decltype(forward_kinematics)>; 
@@ -103,25 +103,25 @@ public:
 
                 for (size_t i = 0; i < waypoints; ++i) {
 
-                    double q[6];
-                    double jacobian[3 * 6];
                     size_t base_pos = nthPos(i);
-                    std::copy_n(trajectory.begin() + base_pos, 6, q);
+                    const QPVector& q = trajectory.segment(base_pos, N_DIM);
+                    QPMatrix<3, N_DIM> jacobian;
 
-                    auto [x, y, z] = fk_fun(q);
-                    jacob_fun(jacobian, q);
+                    auto [x, y, z] = fk_fun((double *) q.data());
+                    const QPVector3d tipXYZ = QPVector3d{x, y, z};
+                    jacob_fun((double *) jacobian.data(), (double *) q.data());
 
                     double lowerBound = -INF;
                     // overcome obstacle with some space between (0.05)
-                    if (line.distanceXY({x, y, z}) < 1.0 / waypoints) {
+                    if (line.distanceXY(tipXYZ) < 1.0 / waypoints) {
                         // set first lower bound to obstacle_z - endeffector_z + J_k dot q_k
-                        lowerBound = line[{x, y, z}][2] - z + 0.1;
-                        for (int k = 0; k < 6; ++k) {
-                            lowerBound += jacobian[2 * 6 + k] * q[k];
+                        lowerBound = line[tipXYZ][2] - z + 0.1;
+                        for (int k = 0; k < N_DIM; ++k) {
+                            lowerBound += jacobian(2, k) * q[k];
                         }
                     }
 
-                    for (int k = 0; k < 6; ++k) {
+                    for (int k = 0; k < N_DIM; ++k) {
                         const auto constraint_idx = 
                             userConstraintOffset + 
                             N_DIM * waypoints * 3 + 
@@ -130,7 +130,7 @@ public:
                             i;
                         addConstraint(constraint_idx,
                                     {
-                                            {base_pos + k, jacobian[2 * 6 + k]}
+                                            {base_pos + k, jacobian(2, k)}
                                     },
                                     {lowerBound, INF});
                     }
@@ -142,7 +142,7 @@ public:
     }
 
     QPConstraints build() {
-        QPMatrix A;
+        QPMatrixSparse A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
 
         // On duplicate, overwrite cell value with the newest Triplet.
