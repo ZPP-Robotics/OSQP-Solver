@@ -150,10 +150,10 @@ private:
                 .positions(0, max_waypoints - 1, pos_con)
                 .velocities(0, max_waypoints - 1, vel_con)
                 .accelerations(0, max_waypoints - 2, acc_con)
-                .position(0, toConstraintEq<N_DIM>(start_pos))
+                .position(0, constraints::equal<N_DIM>(start_pos))
                 .velocity(0, EQ_ZERO<N_DIM>)
                 .acceleration(0, EQ_ZERO<N_DIM>)
-                .position(max_waypoints - 1, toConstraintEq<N_DIM>(end_pos))
+                .position(max_waypoints - 1, constraints::equal<N_DIM>(end_pos))
                 .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
                 .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
                 .zObstacles(z_obstacles_geq, warm_start);

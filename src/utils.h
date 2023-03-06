@@ -57,13 +57,6 @@ Point toPoint(const Ctrl<N> &c) {
 }
 
 template<size_t N>
-constraints::Constraint<N> toConstraintEq(const Ctrl<N> &c) {
-    std::array<double, N> a;
-    std::copy(c.data(), c.data() + N, a.begin());
-    return constraints::equal(a);
-}
-
-template<size_t N>
 QPVector linspace(const Eigen::Vector<double, N> &a, const Eigen::Vector<double, N> &b, size_t n_steps) {
     QPVector res(N * n_steps);
 
