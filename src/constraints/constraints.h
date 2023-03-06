@@ -11,7 +11,7 @@ namespace constraints {
 
     // N-dimensional bound (upper or lower).
     template<size_t N>
-    using Bound = std::optional<std::array<double, N>>;
+    using Bound = std::optional<Eigen::Vector<double, N>>;
 
     // N-dimensional lower and upper bounds.
     template<size_t N>
@@ -19,9 +19,9 @@ namespace constraints {
 
     // Returns array of length N filled with value `val`.
     template<size_t N>
-    std::array<double, N> of(double val) {
-        std::array<double, N> res;
-        res.fill(val);
+    Eigen::Vector<double, N> of(double val) {
+        Eigen::Vector<double, N> res;
+        res.setConstant(val);
         return res;
     }
 
@@ -31,26 +31,26 @@ namespace constraints {
     }
 
     template<size_t N>
-    Constraint<N> equal(std::array<double, N> vals) {
+    Constraint<N> equal(const Eigen::Vector<double, N> &vals) {
         return inRange<N>({vals}, {vals});
     }
 
-    template<size_t N>
-    Constraint<N> greaterEq(std::array<double, N> vals) {
-        return inRange<N>(vals, {});
-    }
-
-    template<size_t N>
-    Constraint<N> lessEq(std::array<double, N> vals) {
-        return inRange<N>({}, vals);
-    }
-
-    template<size_t N>
-    Constraint<N> zObstacleGeq(double z) {
-        auto inf_inf_z = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
-        inf_inf_z.first->at(0) = z;
-        return inf_inf_z;
-    }
+//    template<size_t N>
+//    Constraint<N> greaterEq(const Eigen::Vector<double, N> &vals) {
+//        return inRange<N>(vals, {});
+//    }
+//
+//    template<size_t N>
+//    Constraint<N> lessEq(const Eigen::Vector<double, N> &vals) {
+//        return inRange<N>({}, vals);
+//    }
+//
+//    template<size_t N>
+//    Constraint<N> zObstacleGeq(double z) {
+//        auto inf_inf_z = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
+//        inf_inf_z.first->at(0) = z;
+//        return inf_inf_z;
+//    }
 
     template<size_t N>
     const Constraint<N> ANY = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
