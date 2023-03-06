@@ -22,7 +22,7 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 # ---- Build header-only library qp_solver
 file(GLOB_RECURSE sources src/*.h)
-add_library(qp_solver INTERFACE ${sources})
+add_library(qp_solver INTERFACE ${sources} src/horizontal-line.h)
 target_link_libraries(qp_solver INTERFACE osqp-cpp Eigen3::Eigen)
 target_include_directories(qp_solver INTERFACE src)
 
