@@ -7,7 +7,7 @@
 #include <osqp++.h>
 
 #include "constraints/constraints.h"
-#include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
+
 
 using ExitCode = osqp::OsqpExitCode;
 using QPMatrixSparse = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
@@ -48,13 +48,6 @@ public:
     NoInverseKinematicSolution(Point p)
             : std::runtime_error("No inverse kinematic solution exists for point ") {}
 };
-
-// Converts joint angles to site_xpos (x, y, z)
-template<size_t N>
-Point toPoint(const Ctrl<N> &c) {
-    auto [x, y, z] = forward_kinematics((double *) c.data());
-    return {x, y, z};
-}
 
 template<size_t N>
 QPVector linspace(const Eigen::Vector<double, N> &a, const Eigen::Vector<double, N> &b, size_t n_steps) {

@@ -15,8 +15,8 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
-using ForwardKinematics = std::function<decltype(forward_kinematics)>;
-using Jacobian = std::function<decltype(joint_jacobian)>;
+using ForwardKinematics = std::function<std::tuple<double, double, double>(double *)>;
+using Jacobian = std::function<void(double *, double *)>;
 
 template<size_t N_DIM>
 class ConstraintBuilder {

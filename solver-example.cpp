@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
 #include <tuple>
 #include "src/constraints/constraint-builder.h"
 #include "utils.h"
@@ -23,6 +23,13 @@ using namespace std;
 // in fact it is -2pi and 2pi but -pi and pi is enough to get everywhere
 constexpr double Q_MIN = - M_PI;
 constexpr double Q_MAX =   M_PI;
+
+// Converts joint angles to site_xpos (x, y, z)
+template<size_t N>
+Point toPoint(const Ctrl<N> &c) {
+    auto [x, y, z] = forward_kinematics((double *) c.data());
+    return {x, y, z};
+}
 
 int main() {
 
