@@ -17,7 +17,7 @@ public:
                Constraint<N_DIM> acc_con,
                QPMatrixSparse &&P,
                std::vector<HorizontalLine> z_obstacles_geq,
-               const std::map<size_t, fj_pair_t> &m)
+               std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
@@ -25,7 +25,7 @@ public:
               acc_con(acc_con),
               problem_matrix(P),
               z_obstacles_geq(std::move(z_obstacles_geq)),
-              mappers(m) {
+              mappers(std::move(m)) {
         assert(max_waypoints >= 2);
     }
 
@@ -37,7 +37,7 @@ public:
         auto last_code = ExitCode::kUnknown;
         QPVector last_solution{};
 
-        for(auto i = 0; i < 30; i++) {
+        for (auto i = 0; i < 30; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // // There are no solutions.
@@ -122,9 +122,10 @@ private:
     const Constraint<N_DIM> acc_con;
     const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> z_obstacles_geq;
-    const std::map<size_t, fj_pair_t> mappers;
+    const std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
 
-    std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl<N_DIM>& start_pos, const Ctrl<N_DIM>& end_pos) {
+    std::pair<ConstraintBuilder<N_DIM>, QPVector>
+    initConstraintsAndWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
         // Warm start as described in paper
         // Propertes = 2
         QPVector warm_start = linspace<N_DIM, 2>(start_pos, end_pos, max_waypoints);
@@ -134,16 +135,16 @@ private:
         // Set start and end positions.
         // Set start and end velocities/accelerations to zero.
         return {ConstraintBuilder<N_DIM>{max_waypoints, time_step, mappers}
-                .positions(0, max_waypoints - 1, pos_con)
-                .velocities(0, max_waypoints - 1, vel_con)
-                .accelerations(0, max_waypoints - 2, acc_con)
-                .position(0, toConstraintEq<N_DIM>(start_pos))
-                .velocity(0, EQ_ZERO<N_DIM>)
-                .acceleration(0, EQ_ZERO<N_DIM>)
-                .position(max_waypoints - 1,  toConstraintEq<N_DIM>(end_pos))
-                .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
-                .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
-                .zObstacles(z_obstacles_geq, warm_start),
+                        .positions(0, max_waypoints - 1, pos_con)
+                        .velocities(0, max_waypoints - 1, vel_con)
+                        .accelerations(0, max_waypoints - 2, acc_con)
+                        .position(0, toConstraintEq<N_DIM>(start_pos))
+                        .velocity(0, EQ_ZERO<N_DIM>)
+                        .acceleration(0, EQ_ZERO<N_DIM>)
+                        .position(max_waypoints - 1, toConstraintEq<N_DIM>(end_pos))
+                        .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
+                        .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
+                        .zObstacles(z_obstacles_geq, warm_start),
                 warm_start};
     }
 

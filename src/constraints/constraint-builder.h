@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <map>
+#include <utility>
 
 #include "utils.h"
 #include "constraints.h"
@@ -14,25 +15,25 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
-using forward_kinematics_t = std::function<decltype(forward_kinematics)>;
-using jacobian_t = std::function<decltype(joint_jacobian)>;
-
-using fj_pair_t = std::pair<forward_kinematics_t, jacobian_t>;
-
+using ForwardKinematics = std::function<decltype(forward_kinematics)>;
+using Jacobian = std::function<decltype(joint_jacobian)>;
 
 template<size_t N_DIM>
 class ConstraintBuilder {
 
     using Factor = std::pair<size_t, double>;
-    using matrix_cell = Eigen::Triplet<double, size_t>;
+    using MatrixCell = Eigen::Triplet<double, size_t>;
 
     // position + velocity + acceleration + linearized constraints for obstacles avoidance
     static constexpr const size_t DYNAMICS_DERIVATIVES = 4;
 
 public:
 
-    ConstraintBuilder(size_t waypoints, double timestep, const std::map<size_t, fj_pair_t> &m)
-            : waypoints(waypoints), timestep(timestep), mappers(m) {
+    ConstraintBuilder(size_t waypoints, double timestep,
+                      std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m)
+            : waypoints(waypoints), timestep(timestep), mappers(std::move(m)) {
+        for (const auto &[joint_idx, mapper]: mappers) assert(joint_idx < N_DIM);
+
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
 
@@ -95,8 +96,8 @@ public:
 
             const HorizontalLine &line = z_obstacles_geq[j];
 
-            for (const auto &[joint_idx, fk_ik]: mappers) {
-                const auto &[fk_fun, jacob_fun] = fk_ik;
+            for (const auto &[joint_idx, fk_jac]: mappers) {
+                const auto &[fk_fun, jacob_fun] = fk_jac;
 
                 for (size_t i = 0; i < waypoints; ++i) {
 
@@ -155,9 +156,9 @@ private:
     const size_t waypoints;
     const double timestep;
     size_t userConstraintOffset = 0;
-    std::map<size_t, fj_pair_t> mappers;
+    std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
 
-    std::vector<matrix_cell> linearSystem{};
+    std::vector<MatrixCell> linearSystem{};
     std::vector<double> lowerBounds;
     std::vector<double> upperBounds;
 
