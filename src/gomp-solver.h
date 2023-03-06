@@ -16,14 +16,16 @@ public:
                Constraint<N_DIM> vel_con,
                Constraint<N_DIM> acc_con,
                QPMatrixSparse &&P,
-               std::vector<HorizontalLine> z_obstacles_geq)
+               std::vector<HorizontalLine> z_obstacles_geq,
+               const std::map<size_t, fj_pair_t> &m)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
               vel_con(vel_con),
               acc_con(acc_con),
               problem_matrix(P),
-              z_obstacles_geq(std::move(z_obstacles_geq)) {
+              z_obstacles_geq(std::move(z_obstacles_geq)),
+              mappers(m) {
         assert(max_waypoints >= 2);
     }
 
@@ -120,6 +122,7 @@ private:
     const Constraint<N_DIM> acc_con;
     const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> z_obstacles_geq;
+    const std::map<size_t, fj_pair_t> mappers;
 
     std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl& start_pos, const Ctrl& end_pos) {
         // Warm start as described in paper
@@ -130,7 +133,7 @@ private:
         // pos_con, vel_con, acc_con respectively.
         // Set start and end positions.
         // Set start and end velocities/accelerations to zero.
-        return {ConstraintBuilder<N_DIM>{max_waypoints, time_step}
+        return {ConstraintBuilder<N_DIM>{max_waypoints, time_step, mappers}
                 .positions(0, max_waypoints - 1, pos_con)
                 .velocities(0, max_waypoints - 1, vel_con)
                 .accelerations(0, max_waypoints - 2, acc_con)
