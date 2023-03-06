@@ -43,7 +43,8 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                        { HorizontalLine{{0, 1}, {0, 0, 0.3}} },
-                       m);
+                       m,
+                       &inverse_kinematics);
 
 
     for (int i = 0; i < 1; ++i) {

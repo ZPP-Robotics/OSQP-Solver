@@ -6,6 +6,8 @@
 #include "constraints/constraint-builder.h"
 #include "osqp-wrapper.h"
 
+using InverseKinematics = std::function<int(double *, double, double, double)>;
+
 template<size_t N_DIM>
 class GOMPSolver {
 
@@ -15,9 +17,10 @@ public:
                Constraint<N_DIM> pos_con,
                Constraint<N_DIM> vel_con,
                Constraint<N_DIM> acc_con,
-               QPMatrixSparse &&P,
+               const QPMatrixSparse& P,
                std::vector<HorizontalLine> z_obstacles_geq,
-               std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m)
+               std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m,
+               InverseKinematics ik)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
@@ -25,7 +28,8 @@ public:
               acc_con(acc_con),
               problem_matrix(P),
               z_obstacles_geq(std::move(z_obstacles_geq)),
-              mappers(std::move(m)) {
+              mappers(std::move(m)),
+              ik(std::move(ik)) {
         assert(max_waypoints >= 2);
     }
 
@@ -125,6 +129,7 @@ private:
     const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> z_obstacles_geq;
     const std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
+    const InverseKinematics ik;
 
     QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
         // Warm start as described in paper.
