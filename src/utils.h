@@ -8,7 +8,6 @@
 
 #include "constraints/constraints.h"
 
-
 using ExitCode = osqp::OsqpExitCode;
 using QPMatrixSparse = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
 template<size_t Row, size_t Col>
@@ -16,9 +15,7 @@ using QPMatrix = Eigen::Matrix<double, Row, Col, Eigen::RowMajor>;
 using QPVector = Eigen::VectorXd;
 using QPVector2d = Eigen::Vector2d;
 using QPVector3d = Eigen::Vector3d;
-
 using Point = Eigen::Vector3d;
-
 template<size_t N>
 using Ctrl = Eigen::Vector<double, N>;
 
@@ -30,7 +27,6 @@ using Ctrl = Eigen::Vector<double, N>;
  */
 QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int diagonal_num = 1) {
     QPMatrixSparse m(n, n);
-
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {
         nonZeroValues.emplace_back(i, i, a);
@@ -39,7 +35,6 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
         }
     }
     m.setFromTriplets(nonZeroValues.begin(), nonZeroValues.end());
-
     return m;
 }
 
@@ -54,7 +49,6 @@ QPVector linspace(const Eigen::Vector<double, N> &a, const Eigen::Vector<double,
     QPVector res(N * n_steps);
 
     Eigen::Vector<double, N> step_size = (b - a) / (n_steps - 1);;
-    // first half is for position, initialize it to linear interpolation from a to b
     for (auto step = 0; step < n_steps; step++) {
         Eigen::Vector<double, N> current = step_size * step + a;
         res.segment(step * N, N) = current;
