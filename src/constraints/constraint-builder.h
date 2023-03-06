@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "constraints.h"
 #include "osqp++.h"
+#include "horizontal-line.h"
 
 using namespace constraints;
 

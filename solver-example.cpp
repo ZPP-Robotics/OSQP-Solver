@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "osqp-wrapper.h"
 #include "gomp-solver.h"
+#include "horizontal-line.h"
 #include <chrono>
 #include <fstream>
 
