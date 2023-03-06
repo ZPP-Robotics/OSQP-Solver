@@ -2,6 +2,7 @@
 #define CONSTRAINT_BUILDER_H
 
 #include <cassert>
+#include <map>
 
 #include "utils.h"
 #include "constraints.h"
@@ -12,16 +13,11 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
-namespace {
-    using forward_kinematics_t = std::function<decltype(forward_kinematics)>; 
-    using jacobian_t = std::function<decltype(joint_jacobian)>;
+using forward_kinematics_t = std::function<decltype(forward_kinematics)>;
+using jacobian_t = std::function<decltype(joint_jacobian)>;
 
-    using fj_pair_t = std::pair<forward_kinematics_t, jacobian_t>;
-    const static std::array<fj_pair_t, 2> used_fj_pairs={{
-        {&forward_kinematics, &joint_jacobian}, 
-        {&forward_kinematics_elbow_joint, &jacobian_elbow_joint}
-        }};
-}
+using fj_pair_t = std::pair<forward_kinematics_t, jacobian_t>;
+
 
 template<size_t N_DIM>
 class ConstraintBuilder {
@@ -34,8 +30,8 @@ class ConstraintBuilder {
 
 public:
 
-    ConstraintBuilder(size_t waypoints, double timestep)
-            : waypoints(waypoints), timestep(timestep) {
+    ConstraintBuilder(size_t waypoints, double timestep, const std::map<size_t, fj_pair_t> &m)
+            : waypoints(waypoints), timestep(timestep), mappers(m) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
 
@@ -98,17 +94,17 @@ public:
 
             const HorizontalLine &line = z_obstacles_geq[j];
 
-            for(int fj_pair_idx = 0; fj_pair_idx < used_fj_pairs.size(); ++fj_pair_idx) {
-                const auto& [fk_fun, jacob_fun] = used_fj_pairs[fj_pair_idx];
+            for (const auto &[joint_idx, fk_ik]: mappers) {
+                const auto &[fk_fun, jacob_fun] = fk_ik;
 
                 for (size_t i = 0; i < waypoints; ++i) {
 
                     size_t base_pos = nthPos(i);
-                    const QPVector& q = trajectory.segment(base_pos, N_DIM);
+                    const QPVector &q = trajectory.segment(base_pos, N_DIM);
                     QPMatrix<3, N_DIM> jacobian;
 
                     auto [x, y, z] = fk_fun((double *) q.data());
-                    const QPVector3d tipXYZ = QPVector3d{x, y, z};
+                    const QPVector3d tipXYZ{x, y, z};
                     jacob_fun((double *) jacobian.data(), (double *) q.data());
 
                     double lowerBound = -INF;
@@ -122,19 +118,17 @@ public:
                     }
 
                     for (int k = 0; k < N_DIM; ++k) {
-                        const auto constraint_idx = 
-                            userConstraintOffset + 
-                            N_DIM * waypoints * 3 + 
-                            j * waypoints * used_fj_pairs.size() + 
-                            fj_pair_idx * waypoints +
-                            i;
+                        const auto constraint_idx = userConstraintOffset
+                                                    + N_DIM * waypoints * 3
+                                                    + j * waypoints * mappers.size()
+                                                    + joint_idx * waypoints
+                                                    + i;
                         addConstraint(constraint_idx,
-                                    {
-                                            {base_pos + k, jacobian(2, k)}
-                                    },
-                                    {lowerBound, INF});
+                                      {
+                                              {base_pos + k, jacobian(2, k)}
+                                      },
+                                      {lowerBound, INF});
                     }
-                
                 }
             }
         }
@@ -160,6 +154,7 @@ private:
     const size_t waypoints;
     const double timestep;
     size_t userConstraintOffset = 0;
+    std::map<size_t, fj_pair_t> mappers;
 
     std::vector<matrix_cell> linearSystem{};
     std::vector<double> lowerBounds;

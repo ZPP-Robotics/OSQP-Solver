@@ -25,13 +25,17 @@ constexpr double Q_MAX =   M_PI;
 
 int main() {
 
-    GOMPSolver<DIMS> s{WAYPOINTS, TIME_STEP,
+    std::map<size_t, fj_pair_t> m;
+    m[0] = {&forward_kinematics, &joint_jacobian};
+    m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+
+    GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                    //    {}};
-                       {HorizontalLine{{0, 1}, {0, 0, 0.3}}}};
+                       { HorizontalLine{{0, 1}, {0, 0, 0.3}} },
+                       m);
 
 
     for (int i = 0; i < 1; ++i) {
