@@ -17,6 +17,11 @@ using QPVector = Eigen::VectorXd;
 using QPVector2d = Eigen::Vector2d;
 using QPVector3d = Eigen::Vector3d;
 
+using Point = Eigen::Vector3d;
+
+template<size_t N>
+using Ctrl = Eigen::Vector<double, N>;
+
 /**
  * Creates nxn sparse matrix M so that
  * i < offset then M[i, j] = 0
@@ -38,91 +43,37 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
     return m;
 }
 
-struct Point;
-struct Ctrl;
 
-struct Point {
-    double x, y, z;
-
-    Point(double x, double y, double z) : x(x), y(y), z(z) {}
-
-    Ctrl toCtrl() const;
-};
-
-struct Ctrl {
-    double q1, q2, q3, q4, q5, q6;
-
-    Ctrl(double q1, double q2, double q3, double q4, double q5, double q6)
-            : q1(q1), q2(q2), q3(q3), q4(q4), q5(q5), q6(q6) {}
-
-    Point toPoint() const;
-
-    constraints::Constraint<6> toConstraintEq() const {
-        return constraints::equal(std::array<double, 6>{q1, q2, q3, q4, q5, q6});
-    }
-
-    QPVector to_vec() const {
-        return QPVector{{q1, q2, q3, q4, q5, q6}};
-    }
-};
-
-std::ostream &operator<<(std::ostream &os, const Point &p) {
-    os << "Point: (" << p.x << ", " << p.y << ", " << p.z << ")";
-    return os;
-}
-
-std::ostream &operator<<(std::ostream &os, const Ctrl &p) {
-    os << "Ctrl: (" << p.q1 << ", " << p.q2 << ", " << p.q3 << ", " << p.q4 << ", " << p.q5 << ", " << p.q6 << ")";
-    return os;
-}
-
-std::string to_string(Point const &arg) {
-    std::ostringstream ss;
-    ss << arg;
-    return std::move(ss).str();  // enable efficiencies in c++17
-}
 
 class NoInverseKinematicSolution : public std::runtime_error {
 public:
     NoInverseKinematicSolution(Point p)
-            : std::runtime_error("No inverse kinematic solution exists for point " + to_string(p)) {}
+            : std::runtime_error("No inverse kinematic solution exists for point ") {}
 };
 
-// Converts site_xpos to joint angles
-Ctrl Point::toCtrl() const {
-    double q_sols[8 * 6]{0};
-    int num_sols = inverse_kinematics(q_sols, x, y, z);
-
-    if (num_sols == 0) {
-        throw NoInverseKinematicSolution(*this);
-    }
-
-    // for(auto i = 0; i < num_sols; i++) {
-    //     std::cout << "\nSolution nr: " << i << "\n";
-    //     std::cout << q_sols[i*6 + 0] << ", " << q_sols[i*6 + 1] << ", " << q_sols[i*6 + 2] << ", " << q_sols[i*6 + 3] << ", " << q_sols[i*6 + 4] << ", " << q_sols[i*6 + 5] << "\n";
-    //     std::cout << "As point: " << Ctrl(q_sols[i*6 + 0], q_sols[i*6 + 1], q_sols[i*6 + 2], q_sols[i*6 + 3], q_sols[i*6 + 4], q_sols[i*6 + 5]).toPoint() << "\n";
-    // }
-
-    return Ctrl(q_sols[0], q_sols[1], q_sols[2], q_sols[3], q_sols[4], q_sols[5]);
+// Converts joint angles to site_xpos (x, y, z)
+template<size_t N>
+Point toPoint(const Ctrl<N> &c) {
+    auto [x, y, z] = forward_kinematics((double *) c.data());
+    return {x, y, z};
 }
 
-// Converts joint angles to site_xpos (x, y, z)
-Point Ctrl::toPoint() const {
-    double q[6] = {q1, q2, q3, q4, q5, q6};
-    std::tuple<double, double, double> fc = forward_kinematics(q);
-    return Point(std::get<0>(fc), std::get<1>(fc), std::get<2>(fc));
+template<size_t N>
+constraints::Constraint<N> toConstraintEq(const Ctrl<N> &c) {
+    std::array<double, N> a;
+    std::copy(c.data(), c.data() + N, a.begin());
+    return constraints::equal(a);
 }
 
 template<size_t N_DIM, size_t PROPERTIES>
-QPVector linspace(const Ctrl &a, const Ctrl &b, const size_t n_steps) {
+QPVector linspace(const Ctrl<N_DIM> &a, const Ctrl<N_DIM> &b, const size_t n_steps) {
     QPVector acc;
     acc.resize(N_DIM * n_steps * PROPERTIES);
-    QPVector step_size = (b.to_vec() - a.to_vec()) / (n_steps - 1);
-    QPVector a_vec = a.to_vec();
+    QPVector step_size = (b - a) / (n_steps - 1);;
 
     // first half is for position, initialize it to linear interpolation from a to b
     for (auto step = 0; step < n_steps; step++) {
-        QPVector current = step_size * step + a_vec;
+        QPVector current = step_size * step + a;
         for (auto i = 0; i < N_DIM; i++) {
             acc[step * N_DIM + i] = current[i];
         }

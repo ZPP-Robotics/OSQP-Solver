@@ -29,7 +29,7 @@ public:
         assert(max_waypoints >= 2);
     }
 
-    std::pair<ExitCode, QPVector> run(Ctrl start_pos, Ctrl end_pos) {
+    std::pair<ExitCode, QPVector> run(Ctrl<N_DIM> start_pos, Ctrl<N_DIM> end_pos) {
         auto [constraints, warm_start] = initConstraintsAndWarmStart(start_pos, end_pos);
 
         auto qp_solver = QPSolver{constraints.build(), problem_matrix};
@@ -124,7 +124,7 @@ private:
     const std::vector<HorizontalLine> z_obstacles_geq;
     const std::map<size_t, fj_pair_t> mappers;
 
-    std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl& start_pos, const Ctrl& end_pos) {
+    std::pair<ConstraintBuilder<N_DIM>, QPVector> initConstraintsAndWarmStart(const Ctrl<N_DIM>& start_pos, const Ctrl<N_DIM>& end_pos) {
         // Warm start as described in paper
         // Propertes = 2
         QPVector warm_start = linspace<N_DIM, 2>(start_pos, end_pos, max_waypoints);
@@ -137,10 +137,10 @@ private:
                 .positions(0, max_waypoints - 1, pos_con)
                 .velocities(0, max_waypoints - 1, vel_con)
                 .accelerations(0, max_waypoints - 2, acc_con)
-                .position(0, start_pos.toConstraintEq())
+                .position(0, toConstraintEq<N_DIM>(start_pos))
                 .velocity(0, EQ_ZERO<N_DIM>)
                 .acceleration(0, EQ_ZERO<N_DIM>)
-                .position(max_waypoints - 1, end_pos.toConstraintEq())
+                .position(max_waypoints - 1,  toConstraintEq<N_DIM>(end_pos))
                 .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
                 .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
                 .zObstacles(z_obstacles_geq, warm_start),
