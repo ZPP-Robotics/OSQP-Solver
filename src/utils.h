@@ -43,8 +43,6 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
     return m;
 }
 
-
-
 class NoInverseKinematicSolution : public std::runtime_error {
 public:
     NoInverseKinematicSolution(Point p)
@@ -65,28 +63,17 @@ constraints::Constraint<N> toConstraintEq(const Ctrl<N> &c) {
     return constraints::equal(a);
 }
 
-template<size_t N_DIM, size_t PROPERTIES>
-QPVector linspace(const Ctrl<N_DIM> &a, const Ctrl<N_DIM> &b, const size_t n_steps) {
-    QPVector acc;
-    acc.resize(N_DIM * n_steps * PROPERTIES);
-    QPVector step_size = (b - a) / (n_steps - 1);;
+template<size_t N>
+QPVector linspace(const Eigen::Vector<double, N> &a, const Eigen::Vector<double, N> &b, size_t n_steps) {
+    QPVector res(N * n_steps);
 
+    Eigen::Vector<double, N> step_size = (b - a) / (n_steps - 1);;
     // first half is for position, initialize it to linear interpolation from a to b
     for (auto step = 0; step < n_steps; step++) {
-        QPVector current = step_size * step + a;
-        for (auto i = 0; i < N_DIM; i++) {
-            acc[step * N_DIM + i] = current[i];
-        }
+        Eigen::Vector<double, N> current = step_size * step + a;
+        res.segment(step * N, N) = current;
     }
-
-    // second part if for velocity, initialize it to zero
-    for (auto step = n_steps; step < 2 * n_steps; step++) {
-        for (auto i = 0; i < N_DIM; i++) {
-            acc[step * N_DIM + i] = 0.0;
-        }
-    }
-
-    return acc;
+    return res;
 }
 
 #endif //UTILS_H
