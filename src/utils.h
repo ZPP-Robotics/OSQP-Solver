@@ -10,7 +10,9 @@
 #include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
 
 using ExitCode = osqp::OsqpExitCode;
-using QPMatrix = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
+using QPMatrixSparse = Eigen::SparseMatrix<double, Eigen::ColMajor, long long>;
+template<size_t Row, size_t Col>
+using QPMatrix = Eigen::Matrix<double, Row, Col, Eigen::RowMajor>;
 using QPVector = Eigen::VectorXd;
 using QPVector2d = Eigen::Vector2d;
 using QPVector3d = Eigen::Vector3d;
@@ -21,8 +23,8 @@ using QPVector3d = Eigen::Vector3d;
  * i >= offset then M[i, i] = a, M[i, i - diagonal_num] = b, M[i, i + diagonal_num] = b.
  * @return M
  */
-QPMatrix triDiagonalMatrix(double a, double b, int n, int offset = 0, int diagonal_num = 1) {
-    QPMatrix m(n, n);
+QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int diagonal_num = 1) {
+    QPMatrixSparse m(n, n);
 
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {
