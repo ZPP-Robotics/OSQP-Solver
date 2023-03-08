@@ -13,15 +13,13 @@ class QPSolver {
 
 public:
 
-    QPSolver(const QPConstraints &c, const QPMatrix &P) {
+    QPSolver(const QPConstraints &c, const QPMatrixSparse &P) {
         auto &[l, A, u] = c;
         OsqpInstance instance;
 
         instance.constraint_matrix = A;
         instance.objective_matrix = P;
-
-        instance.objective_vector.resize(A.cols());
-
+        instance.objective_vector.setZero(A.cols());
         instance.lower_bounds = l;
         instance.upper_bounds = u;
 
@@ -40,6 +38,12 @@ public:
         if (!(status = solver.SetBounds(low, upp)).ok()) {
             throw std::invalid_argument(status.ToString());
         }
+    }
+
+    void setWarmStart(const QPVector& primal_vector) {
+        auto status = solver.SetPrimalWarmStart(primal_vector);
+        std::cout << "STATUS: " << status.ToString() << std::endl;
+        assert(status.ok());
     }
 
     pair<OsqpExitCode, Eigen::VectorXd> solve() {

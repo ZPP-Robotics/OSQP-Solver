@@ -17,13 +17,13 @@ const size_t DEFAULT_WAYPOINTS_CNT = 2;
  *
  */
 
-void f(std::array<std::optional<double>, 3> r) {
-
-}
-
 void expect_equality_constraint(size_t idx, const Eigen::VectorXd &low, const Eigen::VectorXd &upp) {
     EXPECT_EQ(low[idx], 0);
     EXPECT_EQ(upp[idx], 0);
+}
+
+void expect_vectors_eq(QPVector3d a, QPVector3d b) {
+    EXPECT_EQ((a - b).norm(), 0);
 }
 
 TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
@@ -48,7 +48,24 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
         EXPECT_EQ(A.coeff(i, i + 1), -1); // (-1) * q_{i + 1}
         EXPECT_EQ(A.coeff(i, DEFAULT_WAYPOINTS_CNT + i), DEFAULT_TIME_STEP); // v_i * DEFAULT_TIME_STEP
     }
+}
 
-    f({3, 2, 1});
-    std::array<std::optional<double>, 3> a = {1, 2, 3};
+TEST(LineUtilTest, XAxis) {
+    HorizontalLine line{{2, 0}, {1, 1, 1}};
+
+    EXPECT_EQ(line.distanceVec({2, 1, 1}).norm(), 0);
+    EXPECT_EQ(line.distanceVec({1, 2, 1}).norm(), 1);
+    EXPECT_EQ(line.distanceVec({1, 1, 2}).norm(), 1);
+    EXPECT_EQ(line.distanceVec({1, 2, 2}).norm(), sqrt(2));
+
+    EXPECT_EQ(line.distanceXY({2, 1, 1}), 0);
+    EXPECT_EQ(line.distanceXY({1, 2, 1}), 1);
+    EXPECT_EQ(line.distanceXY({1, 1, 2}), 0);
+
+    QPVector3d p_real = QPVector3d{1.1, 1.2, 1.3};
+    QPVector3d p_expected = QPVector3d{1.1, 1, 1};
+    // should return closest point on the line to the given one.
+    QPVector3d p_act = line[p_real];
+
+    expect_vectors_eq(p_act, p_expected);
 }

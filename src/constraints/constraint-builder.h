@@ -2,28 +2,38 @@
 #define CONSTRAINT_BUILDER_H
 
 #include <cassert>
+#include <map>
+#include <utility>
 
 #include "utils.h"
 #include "constraints.h"
 #include "osqp++.h"
+#include "horizontal-line.h"
 
 using namespace constraints;
 
 // <lower_bounds, constraint_matrix, upper_bounds>
-using QPConstraints = std::tuple<QPVector, QPMatrix, QPVector>;
+using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
+
+using ForwardKinematics = std::function<std::tuple<double, double, double>(double *)>;
+using Jacobian = std::function<void(double *, double *)>;
 
 template<size_t N_DIM>
 class ConstraintBuilder {
 
     using Factor = std::pair<size_t, double>;
-    using matrix_cell = Eigen::Triplet<double, size_t>;
+    using MatrixCell = Eigen::Triplet<double, size_t>;
 
-    static constexpr const size_t DYNAMICS_DERIVATIVES = 3;
+    // position + velocity + acceleration + linearized constraints for obstacles avoidance
+    static constexpr const size_t DYNAMICS_DERIVATIVES = 4;
 
 public:
 
-    ConstraintBuilder(size_t waypoints, double timestep)
-            : waypoints(waypoints), timestep(timestep) {
+    ConstraintBuilder(size_t waypoints, double timestep,
+                      std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m)
+            : waypoints(waypoints), timestep(timestep), mappers(std::move(m)) {
+        for (const auto &[joint_idx, mapper]: mappers) assert(joint_idx < N_DIM);
+
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
 
@@ -78,8 +88,57 @@ public:
         return *this;
     }
 
+    ConstraintBuilder &zObstacles(
+            const std::vector<HorizontalLine> &z_obstacles_geq,
+            const QPVector &trajectory) {
+
+        for (size_t j = 0; j < z_obstacles_geq.size(); ++j) {
+
+            const HorizontalLine &line = z_obstacles_geq[j];
+
+            for (const auto &[joint_idx, fk_jac]: mappers) {
+                const auto &[fk_fun, jacob_fun] = fk_jac;
+
+                for (size_t i = 0; i < waypoints; ++i) {
+
+                    size_t base_pos = nthPos(i);
+                    const QPVector &q = trajectory.segment(base_pos, N_DIM);
+                    QPMatrix<3, N_DIM> jacobian;
+
+                    auto [x, y, z] = fk_fun((double *) q.data());
+                    const QPVector3d tipXYZ{x, y, z};
+                    jacob_fun((double *) jacobian.data(), (double *) q.data());
+
+                    double lowerBound = -INF;
+                    // overcome obstacle with some space between (0.05)
+                    if (line.distanceXY(tipXYZ) < 1.0 / waypoints) {
+                        // set first lower bound to obstacle_z - endeffector_z + J_k dot q_k
+                        lowerBound = line[tipXYZ][2] - z + 0.1;
+                        for (int k = 0; k < N_DIM; ++k) {
+                            lowerBound += jacobian(2, k) * q[k];
+                        }
+                    }
+
+                    for (int k = 0; k < N_DIM; ++k) {
+                        const auto constraint_idx = userConstraintOffset
+                                                    + N_DIM * waypoints * 3
+                                                    + j * waypoints * mappers.size()
+                                                    + joint_idx * waypoints
+                                                    + i;
+                        addConstraint(constraint_idx,
+                                      {
+                                              {base_pos + k, jacobian(2, k)}
+                                      },
+                                      {lowerBound, INF});
+                    }
+                }
+            }
+        }
+        return *this;
+    }
+
     QPConstraints build() {
-        QPMatrix A;
+        QPMatrixSparse A;
         A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
 
         // On duplicate, overwrite cell value with the newest Triplet.
@@ -97,8 +156,9 @@ private:
     const size_t waypoints;
     const double timestep;
     size_t userConstraintOffset = 0;
+    std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
 
-    std::vector<matrix_cell> linearSystem{};
+    std::vector<MatrixCell> linearSystem{};
     std::vector<double> lowerBounds;
     std::vector<double> upperBounds;
 
@@ -115,6 +175,11 @@ private:
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
         assert(i < waypoints - 1);
         return waypoints * N_DIM * 2 + i * N_DIM;
+    }
+
+    [[nodiscard]] size_t nthZObstacle(size_t i) const {
+        assert(i < waypoints - 1);
+        return waypoints * N_DIM * 3 + i * N_DIM;
     }
 
     std::pair<std::optional<double>, std::optional<double>>
@@ -174,7 +239,6 @@ private:
             }
         }
     }
-
 };
 
 #endif //CONSTRAINT_BUILDER_H
