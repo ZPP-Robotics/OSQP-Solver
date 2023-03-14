@@ -36,20 +36,6 @@ PYBIND11_MODULE(gomp, m) {
 }
 
 // Compile using:
-// g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/gomp-solver-wrapper.h -o gomp`python3-config --extension-suffix`
-
-// .py
-// import gomp
-
-// start_pos_joints = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-// end_pos_tcp = [1.0, 2.0, 3.0]
-// time_step = 0.1
-// waypoints_count = 10
-// velocity_constraints = ([], [])
-// acceleration_constraints = ([], [])
-// position_constraints = ([], [])
-// obstacles = [gomp.Obstacle(1), gomp.Obstacle(2), gomp.Obstacle(3)]
-
-// result = gomp.solve(start_pos_joints, end_pos_tcp, time_step, waypoints_count, velocity_constraints, acceleration_constraints, position_constraints, obstacles)
+// g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/gomp-solver-wrapper.cpp -o gomp`python3-config --extension-suffix`
 
 #endif // GOMP_SOLVER_WRAPPER_H
