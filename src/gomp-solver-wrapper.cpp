@@ -1,6 +1,3 @@
-#ifndef GOMP_SOLVER_WRAPPER_H
-#define GOMP_SOLVER_WRAPPER_H
-
 #include <tuple>
 #include <vector>
 #include <array>
@@ -37,5 +34,3 @@ PYBIND11_MODULE(gomp, m) {
 
 // Compile using:
 // g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/gomp-solver-wrapper.cpp -o gomp`python3-config --extension-suffix`
-
-#endif // GOMP_SOLVER_WRAPPER_H
