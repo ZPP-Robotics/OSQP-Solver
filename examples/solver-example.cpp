@@ -1,7 +1,7 @@
 #include <iostream>
-#include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
+#include "analytical_ik.h"
 #include <tuple>
-#include "src/constraints/constraint-builder.h"
+#include "constraints/constraint-builder.h"
 #include "utils.h"
 #include "osqp-wrapper.h"
 #include "gomp-solver.h"
