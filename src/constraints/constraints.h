@@ -8,7 +8,7 @@
 
 namespace constraints {
 
-    const double INF = std::numeric_limits<double>::infinity();
+    const double INF = OSQP_INFTY;
 
     // N-dimensional bound (upper or lower).
     template<size_t N>

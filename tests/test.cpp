@@ -51,16 +51,16 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
 }
 
 TEST(LineUtilTest, XAxis) {
-    HorizontalLine line{{2, 0}, {1, 1, 1}};
+    HorizontalLine line{{2, 0}, {1, 1, 1}, {0, 0, 0.1}};
 
-    EXPECT_EQ(line.distanceVec({2, 1, 1}).norm(), 0);
-    EXPECT_EQ(line.distanceVec({1, 2, 1}).norm(), 1);
-    EXPECT_EQ(line.distanceVec({1, 1, 2}).norm(), 1);
-    EXPECT_EQ(line.distanceVec({1, 2, 2}).norm(), sqrt(2));
+    EXPECT_EQ(line.getDistanceVec({2, 1, 1}).norm(), 0);
+    EXPECT_EQ(line.getDistanceVec({1, 2, 1}).norm(), 1);
+    EXPECT_EQ(line.getDistanceVec({1, 1, 2}).norm(), 1);
+    EXPECT_EQ(line.getDistanceVec({1, 2, 2}).norm(), sqrt(2));
 
-    EXPECT_EQ(line.distanceXY({2, 1, 1}), 0);
-    EXPECT_EQ(line.distanceXY({1, 2, 1}), 1);
-    EXPECT_EQ(line.distanceXY({1, 1, 2}), 0);
+    EXPECT_EQ(line.getDistanceXY({2, 1, 1}), 0);
+    EXPECT_EQ(line.getDistanceXY({1, 2, 1}), 1);
+    EXPECT_EQ(line.getDistanceXY({1, 1, 2}), 0);
 
     QPVector3d p_real = QPVector3d{1.1, 1.2, 1.3};
     QPVector3d p_expected = QPVector3d{1.1, 1, 1};

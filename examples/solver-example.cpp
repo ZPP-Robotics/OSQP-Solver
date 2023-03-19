@@ -35,31 +35,35 @@ int main() {
 
     std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
     m[0] = {&forward_kinematics, &joint_jacobian};
-    m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+    // m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+    std::vector<HorizontalLine> obstacles = {
+        // HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, 0.1})
+        // ,
+        HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, 0.2})
+    };
 
     GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                       { HorizontalLine{{0, 1}, {0, 0, 0.3}} },
+                       obstacles,
                        m,
                        &inverse_kinematics);
-
 
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        Point   end_pos_gt = toPoint<6>({-M_PI,0,0,0,0,0});
-        auto [e, b1] = s.run({0,0,0,0,0,0}, {-M_PI,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
+        auto [e, b1] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
         for(auto i = 0; i < WAYPOINTS; i++) {
             output_file_ctrl << b1[DIMS * i] << " " << b1[DIMS * i + 1] << " " << b1[DIMS * i + 2] << " " << b1[DIMS * i + 3] << " " << b1[DIMS * i + 4] << " " << b1[DIMS * i + 5] << "\n";
             Point point = toPoint<6>({b1[DIMS * i + 0], b1[DIMS * i + 1], b1[DIMS * i + 2], b1[DIMS * i + 3], b1[DIMS * i + 4], b1[DIMS * i + 5]});
-            output_file_xyz << point << "\n";
+            output_file_xyz << "(" << point[0] << ", " << point[1] << ", " << point[2] << ")" << "\n";
         }
         output_file_ctrl.close();
         output_file_xyz.close();
