@@ -19,6 +19,14 @@ using Point = Eigen::Vector3d;
 template<size_t N>
 using Ctrl = Eigen::Vector<double, N>;
 
+enum Axis : size_t {
+    X, Y, Z
+};
+
+constexpr const std::array<Axis, 3> XYZ_AXES = {X, Y, Z};
+
+constexpr const double CENTIMETER = 0.01;
+
 /**
  * Creates nxn sparse matrix M so that
  * i < offset then M[i, j] = 0

@@ -18,8 +18,8 @@ public:
                Constraint<N_DIM> vel_con,
                Constraint<N_DIM> acc_con,
                const QPMatrixSparse& P,
-               std::vector<HorizontalLine> z_obstacles_geq,
-               std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m,
+               const std::vector<HorizontalLine> &obstacles,
+               std::map<JointIndex, std::pair<ForwardKinematics, Jacobian>> m,
                InverseKinematics ik)
             : max_waypoints(waypoints),
               time_step(time_step),
@@ -27,8 +27,8 @@ public:
               vel_con(vel_con),
               acc_con(acc_con),
               problem_matrix(P),
-              z_obstacles_geq(std::move(z_obstacles_geq)),
-              mappers(std::move(m)),
+              obstacles(obstacles),
+              mappers(m),
               ik(std::move(ik)) {
         assert(max_waypoints >= 2);
     }
@@ -43,7 +43,7 @@ public:
         QPVector last_solution;
         auto last_code = ExitCode::kUnknown;
 
-        for (auto i = 0; i < 30; i++) {
+        for (auto i = 0; i < 20; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
@@ -56,7 +56,7 @@ public:
             last_solution = solution;
             qp_solver.update(
                     constraint_builder
-                            .zObstacles(z_obstacles_geq, solution)
+                            .withObstacles(obstacles, solution)
                             .build()
             );
         }
@@ -71,11 +71,11 @@ private:
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;
     const QPMatrixSparse problem_matrix;
-    const std::vector<HorizontalLine> z_obstacles_geq;
+    const std::vector<HorizontalLine> obstacles;
     const std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
     const InverseKinematics ik;
 
-    QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
+QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
         // Warm start as described in paper.
         QPVector positions = linspace<N_DIM>(start_pos, end_pos, max_waypoints);
 
@@ -105,7 +105,7 @@ private:
                 .position(max_waypoints - 1, constraints::equal<N_DIM>(end_pos))
                 .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
                 .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
-                .zObstacles(z_obstacles_geq, warm_start);
+                .withObstacles(obstacles, warm_start);
     }
 
 };

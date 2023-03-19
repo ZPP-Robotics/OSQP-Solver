@@ -46,7 +46,6 @@ int main() {
                        m,
                        &inverse_kinematics);
 
-
     for (int i = 0; i < 1; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -59,7 +58,7 @@ int main() {
         for(auto i = 0; i < WAYPOINTS; i++) {
             output_file_ctrl << b1[DIMS * i] << " " << b1[DIMS * i + 1] << " " << b1[DIMS * i + 2] << " " << b1[DIMS * i + 3] << " " << b1[DIMS * i + 4] << " " << b1[DIMS * i + 5] << "\n";
             Point point = toPoint<6>({b1[DIMS * i + 0], b1[DIMS * i + 1], b1[DIMS * i + 2], b1[DIMS * i + 3], b1[DIMS * i + 4], b1[DIMS * i + 5]});
-            output_file_xyz << point << "\n";
+            output_file_xyz << "(" << point[0] << ", " << point[1] << ", " << point[2] << ")" << "\n";
         }
         output_file_ctrl.close();
         output_file_xyz.close();
