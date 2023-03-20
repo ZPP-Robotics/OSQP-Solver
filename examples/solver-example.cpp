@@ -33,9 +33,8 @@ Point toPoint(const Ctrl<N> &c) {
 
 int main() {
 
-    std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
-    m[0] = {&forward_kinematics, &joint_jacobian};
-    m[2] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers = { {&forward_kinematics, &joint_jacobian} };
+    //m[2] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
 
     GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
@@ -43,7 +42,7 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
                        { HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, 0.1}), HorizontalLine({1, 0}, {0.3, 0.5, 0.3}, {0, 0, 0.1}) },
-                       m,
+                       mappers,
                        &inverse_kinematics);
 
     for (int i = 0; i < 1; ++i) {

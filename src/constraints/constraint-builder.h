@@ -15,26 +15,25 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
-using ForwardKinematics = std::function<std::tuple<double, double, double>(double *)>;
-using Jacobian = std::function<void(double *, double *)>;
-using JointIndex = size_t;
+using ForwardKinematicsFun = std::function<std::tuple<double, double, double>(double *)>;
+using JacobianFun = std::function<void(double *, double *)>;
 
 template<size_t N_DIM>
 class ConstraintBuilder {
 
     using Factor = std::pair<size_t, double>;
     using MatrixCell = Eigen::Triplet<double, size_t>;
+    using Jacobian = QPMatrix<3, N_DIM>;
 
     // position + velocity + acceleration + linearized constraints for obstacles avoidance
     static constexpr const size_t DYNAMICS_DERIVATIVES = 4;
 
 public:
 
-    ConstraintBuilder(size_t waypoints, double timestep,
-                      std::map<JointIndex, std::pair<ForwardKinematics, Jacobian>> m)
-            : waypoints(waypoints), timestep(timestep), mappers(std::move(m)) {
-        for (const auto &[joint_idx, mapper]: mappers) assert(joint_idx < N_DIM);
-
+    ConstraintBuilder(size_t waypoints,
+                        double timestep,
+                        const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m)
+            : waypoints(waypoints), timestep(timestep), mappers(m) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
 
@@ -96,57 +95,20 @@ public:
         size_t next_obstacle_constraint_idx = obstacle_constraints_base;
 
         for (const auto &obstacle : obstacles) {
-
             // Make each specified joint avoid a given obstacle.
-            for (const auto &[joint_idx, fk_jac]: mappers) {
-                const auto &[forward_kinematics, jacobian_calculator] = fk_jac;
 
-                // Calculate position of the specified joint at each waypoint of the current trajectory,
-                // and constrain its position if it is close to the obstacle.
-                bool isAlreadyConstrained = false;
-                Ctrl<N_DIM> q = trajectory.segment(nthPos(0), N_DIM);
-                QPMatrix<XYZ_AXES.size(), N_DIM> jac;
+            for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
+                QPVector p_trajectory = mapJointTrajectoryToXYZ(trajectory, forward_kinematics_fun);
 
-                auto [x, y, z] = forward_kinematics((double *) q.data());
-                QPVector3d p = {x, y, z};
-                jacobian_calculator((double *) jac.data(), (double *) q.data());
-
-
-                
-                for (size_t waypoint = 0; waypoint < waypoints; ++waypoint) {
-                    if (waypoint + 1 < waypoints) {
-                        // has next waypoint.
-                        Ctrl<N_DIM> q_next = trajectory.segment(nthPos(waypoint + 1), N_DIM);
-                        QPMatrix<XYZ_AXES.size(), N_DIM> jac_next;
-                        auto [x, y, z] = forward_kinematics((double *) q_next.data());
-                        QPVector3d p_next = {x, y, z};
-                        jacobian_calculator((double *) jac_next.data(), (double *) q_next.data());
-
-                        if (obstacle.areOnOppositeSides(p, p_next)) {
-                            if (!isAlreadyConstrained) {
-                                addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
-                            }
-                            addObstacleConstraint(next_obstacle_constraint_idx++, q_next, p_next, jac_next, obstacle, waypoint + 1);
-                            isAlreadyConstrained = true;
-                        } else {
-                            if (!isAlreadyConstrained) {
-                                if (obstacle.isClose(p, CENTIMETER * 10)) {
-                                    addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
-                                } else {
-                                    addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
-                                }
-                            }
-                            isAlreadyConstrained = false;
-                        }
-                        q = q_next;
-                        p = p_next;
-                        jac = jac_next;
-                    } else if (!isAlreadyConstrained) {
-                        if (obstacle.isClose(p, CENTIMETER * 10)) {
-                            addObstacleConstraint(next_obstacle_constraint_idx, q, p, jac, obstacle, waypoint);
-                        } else {
-                            addDummyObstacleConstraint(next_obstacle_constraint_idx, jac, waypoint);
-                        }
+                for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+                    Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
+                    Point p = p_trajectory.segment(waypoint * 3, 3);
+                    Jacobian jac;
+                    jacobian_fun((double *) jac.data(), (double *) q.data());
+                    if (obstacle.hasCollision(waypoint, p_trajectory, 10 * CENTIMETER)) {
+                        addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
+                    } else {
+                        addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
                     }
                 }
             }
@@ -173,7 +135,7 @@ private:
     const size_t waypoints;
     const double timestep;
     size_t userConstraintOffset = 0;
-    std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
+    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
 
     std::vector<MatrixCell> linearSystem{};
     std::vector<double> lowerBounds;
@@ -192,11 +154,6 @@ private:
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
         assert(i < waypoints - 1);
         return waypoints * N_DIM * 2 + i * N_DIM;
-    }
-
-    [[nodiscard]] size_t nthZObstacle(size_t i) const {
-        assert(i < waypoints - 1);
-        return waypoints * N_DIM * 3 + i * N_DIM;
     }
 
     std::pair<std::optional<double>, std::optional<double>>
@@ -259,25 +216,21 @@ private:
 
     void addObstacleConstraint(size_t constraint_idx,
                                 const Ctrl<N_DIM> &q,
-                                const QPVector3d &p,
-                                const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                const Point &p,
+                                const Jacobian &jacobian,
                                 const HorizontalLine &obstacle,
                                 size_t waypoint) {
-        double low = -INF;
-        double upp = INF;
-
-        //printf("position (x=%f, y=%f, z=%f), closest on obstacle: (x=%f, y=%f, z=%f)\n", x, y, z, obstacle[tipXYZ][0], obstacle[tipXYZ][1], obstacle[tipXYZ][2]);
         double offset = obstacle.getBypassOffset()[Axis::Z];
         double bound = obstacle[p][Axis::Z] + offset;
         bound -= p[Axis::Z];
         bound += jacobian.row(Axis::Z) * q;
 
+        double low = -INF;
+        double upp = INF;
         if (offset > CENTIMETER) {
-            //printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be >= %f\n", x, y, z, Axis::Z,  obstacle[tipXYZ][Axis::Z] + offset);
             // Bypass from above.
             low = bound;
         } else if (offset < -CENTIMETER) {
-            //printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be <= %f\n", x, y, z, Axis::Z,  obstacle[tipXYZ][Axis::Z] + offset);
             // Bypass from below.
             upp = bound;
         }
@@ -286,13 +239,13 @@ private:
     }
 
     void addDummyObstacleConstraint(size_t constraint_idx,
-                                    const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                    const Jacobian &jacobian,
                                     size_t waypoint) {
         addObstacleConstraint(constraint_idx, jacobian, waypoint, -INF, INF);                            
     }
 
     void addObstacleConstraint(size_t constraint_idx,
-                                const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                const Jacobian &jacobian,
                                 size_t waypoint,
                                 double low,
                                 double upp) {
@@ -301,6 +254,16 @@ private:
             constraintFactors[i] = {nthPos(waypoint) + i, jacobian(Axis::Z, i)};
         }
         addConstraint(constraint_idx, constraintFactors, {low, upp});
+    }
+
+    QPVector mapJointTrajectoryToXYZ(const QPVector &trajectory, const ForwardKinematicsFun &mapper) {
+        QPVector trajectory_xyz(3 * waypoints);
+        for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+            Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
+            auto [x, y, z] = mapper((double *) q.data());
+            trajectory_xyz.segment(3 * waypoint, 3) = Point{x, y, z};
+        }
+        return trajectory_xyz;
     }
 };
 

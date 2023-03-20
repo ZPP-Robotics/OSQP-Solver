@@ -11,7 +11,7 @@ private:
      * D - direction of line (horizontal & unit length)
      */
     const QPVector3d D;
-    const QPVector3d A;
+    const Point A;
     const QPVector3d bypassOffset;
 
     static QPVector3d fromXY(const QPVector2d &v) {
@@ -20,7 +20,7 @@ private:
 
 public:
 
-    HorizontalLine(const QPVector2d &direction, const QPVector3d &point, QPVector3d bypassOffset)
+    HorizontalLine(const QPVector2d &direction, const Point &point, QPVector3d bypassOffset)
             : D(fromXY(direction) / direction.norm()),
               A(point),
               bypassOffset(bypassOffset) {}
@@ -41,12 +41,12 @@ public:
      * X == A + ((P-A) dot D)D
      * Returns perpendicular: X-P
      */
-    QPVector3d getDistanceVec(const QPVector3d &P) const {
+    QPVector3d getDistanceVec(const Point &P) const {
         QPVector3d X = A + (P - A).dot(D) * D;
         return X - P;
     }
 
-    QPVector2d getDistanceVecXY(const QPVector3d &P) const {
+    QPVector2d getDistanceVecXY(const Point &P) const {
         QPVector3d dist = getDistanceVec(P);
         return QPVector2d{dist[0], dist[1]};
     }
@@ -54,14 +54,14 @@ public:
     /**
      * Return "horizontal" distance from P to line.
      */
-    double getDistanceXY(const QPVector3d &P) const {
+    double getDistanceXY(const Point &P) const {
         return getDistanceVecXY(P).norm();
     }
 
     /**
      * Return point on the line closest to P.
      */
-    QPVector3d operator[](const QPVector3d &P) const {
+    Point operator[](const Point &P) const {
         return P + getDistanceVec(P);
     };
 
@@ -69,19 +69,30 @@ public:
         return bypassOffset;
     }
 
-    bool areOnOppositeSides(const QPVector3d &P, const QPVector3d &Q) const {
+    bool areOnOppositeSides(const Point &P, const Point &Q) const {
         QPVector2d distP = getDistanceVecXY(P);
         QPVector2d distQ = getDistanceVecXY(Q);
-        bool res = distP.dot(distQ) < 0;
-        if (res) {
-            printf("points (%f, %f, %f) and (%f, %f, %f) are on opposite sides of line (dir=(%f, %f))\n", P[0], P[1], P[2], Q[0], Q[1], Q[2], D[0], D[1]);
-        }
-                                    
-        return res;
+        return distP.dot(distQ) < 0;
     }
 
-    bool isClose(const QPVector3d &P, double radius) const {
+    bool isClose(const Point &P, double radius) const {
         return getDistanceXY(P) < radius;
+    }
+
+    bool hasCollision(int waypoint, const QPVector &trajectory_xyz, double collision_radius) const {
+        int waypoints = trajectory_xyz.size() / 3;        
+        Point p = trajectory_xyz.segment(3 * waypoint, 3);
+
+        if (isClose(p, collision_radius)) return true;
+        if (waypoint > 0) {
+            Point p_prev = trajectory_xyz.segment(3 * (waypoint - 1), 3);
+            if (areOnOppositeSides(p_prev, p)) return true;
+        }
+        if (waypoint + 1 < waypoints) {
+            Point p_next = trajectory_xyz.segment(3 * (waypoint + 1), 3);
+            if (areOnOppositeSides(p, p_next)) return true;
+        }
+        return false;
     }
 
 

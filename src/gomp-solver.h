@@ -14,13 +14,13 @@ class GOMPSolver {
 public:
 
     GOMPSolver(size_t waypoints, double time_step,
-               Constraint<N_DIM> pos_con,
-               Constraint<N_DIM> vel_con,
-               Constraint<N_DIM> acc_con,
-               const QPMatrixSparse& P,
+               const Constraint<N_DIM> &pos_con,
+               const Constraint<N_DIM> &vel_con,
+               const Constraint<N_DIM> &acc_con,
+               const QPMatrixSparse &P,
                const std::vector<HorizontalLine> &obstacles,
-               std::map<JointIndex, std::pair<ForwardKinematics, Jacobian>> m,
-               InverseKinematics ik)
+               const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
+               const InverseKinematics &ik)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
@@ -29,7 +29,7 @@ public:
               problem_matrix(P),
               obstacles(obstacles),
               mappers(m),
-              ik(std::move(ik)) {
+              ik(ik) {
         assert(max_waypoints >= 2);
     }
 
@@ -70,7 +70,7 @@ private:
     const Constraint<N_DIM> acc_con;
     const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> obstacles;
-    const std::map<size_t, std::pair<ForwardKinematics, Jacobian>> mappers;
+    const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
     const InverseKinematics ik;
 
 QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
