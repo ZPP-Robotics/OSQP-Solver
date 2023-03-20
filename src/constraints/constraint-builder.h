@@ -103,48 +103,50 @@ public:
 
                 // Calculate position of the specified joint at each waypoint of the current trajectory,
                 // and constrain its position if it is close to the obstacle.
+                bool isAlreadyConstrained = false;
+                Ctrl<N_DIM> q = trajectory.segment(nthPos(0), N_DIM);
+                QPMatrix<XYZ_AXES.size(), N_DIM> jac;
+
+                auto [x, y, z] = forward_kinematics((double *) q.data());
+                QPVector3d p = {x, y, z};
+                jacobian_calculator((double *) jac.data(), (double *) q.data());
+
+
+                
                 for (size_t waypoint = 0; waypoint < waypoints; ++waypoint) {
-                    size_t base_pos = nthPos(waypoint);
-                    const QPVector &q = trajectory.segment(base_pos, N_DIM);
-                    QPMatrix<XYZ_AXES.size(), N_DIM> jacobian;
+                    if (waypoint + 1 < waypoints) {
+                        // has next waypoint.
+                        Ctrl<N_DIM> q_next = trajectory.segment(nthPos(waypoint + 1), N_DIM);
+                        QPMatrix<XYZ_AXES.size(), N_DIM> jac_next;
+                        auto [x, y, z] = forward_kinematics((double *) q_next.data());
+                        QPVector3d p_next = {x, y, z};
+                        jacobian_calculator((double *) jac_next.data(), (double *) q_next.data());
 
-                    auto [x, y, z] = forward_kinematics((double *) q.data());
-                    const QPVector3d tipXYZ{x, y, z};
-                    jacobian_calculator((double *) jacobian.data(), (double *) q.data());
-
-                    // Create constraints for each axis in [X, Y, Z] separately,
-                    // because for some axes we want to create a "<=" constraint,
-                    // and for some axes the ">=" constraint.
-                    for (Axis axis : XYZ_AXES) {
-                        double low = -INF;
-                        double upp = INF;
-
-                        // Create constraint if end effector is located within (1 / waypoints)
-                        // meters from the obstacle.
-                        // TODO: add obstacle based on 1) small distance, 2) alternating sign of distance.
-                        if (obstacle.getDistanceXY(tipXYZ) < 0.3) {
-                            printf("position (x=%f, y=%f, z=%f), closest on obstacle: (x=%f, y=%f, z=%f)\n", x, y, z, obstacle[tipXYZ][0], obstacle[tipXYZ][1], obstacle[tipXYZ][2]);
-                            double offset = obstacle.getBypassOffset()[axis];
-                            double bound = obstacle[tipXYZ][axis] + offset;
-                            bound -= tipXYZ[axis];
-                            bound += jacobian.row(axis) * q;
-
-                            if (offset > CENTIMETER) {
-                                printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be >= %f\n", x, y, z, axis,  obstacle[tipXYZ][axis] + offset);
-                                // Bypass from above.
-                                low = bound;
-                            } else if (offset < -CENTIMETER) {
-                                printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be <= %f\n", x, y, z, axis,  obstacle[tipXYZ][axis] + offset);
-                                // Bypass from below.
-                                upp = bound;
+                        if (obstacle.areOnOppositeSides(p, p_next)) {
+                            if (!isAlreadyConstrained) {
+                                addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
                             }
+                            addObstacleConstraint(next_obstacle_constraint_idx++, q_next, p_next, jac_next, obstacle, waypoint + 1);
+                            isAlreadyConstrained = true;
+                        } else {
+                            if (!isAlreadyConstrained) {
+                                if (obstacle.isClose(p, CENTIMETER * 10)) {
+                                    addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
+                                } else {
+                                    addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
+                                }
+                            }
+                            isAlreadyConstrained = false;
                         }
-                        
-                        std::vector<Factor> constraintFactors(N_DIM);
-                        for (int i = 0; i < N_DIM; ++i) {
-                            constraintFactors[i] = {base_pos + i, jacobian(axis, i)};
+                        q = q_next;
+                        p = p_next;
+                        jac = jac_next;
+                    } else if (!isAlreadyConstrained) {
+                        if (obstacle.isClose(p, CENTIMETER * 10)) {
+                            addObstacleConstraint(next_obstacle_constraint_idx, q, p, jac, obstacle, waypoint);
+                        } else {
+                            addDummyObstacleConstraint(next_obstacle_constraint_idx, jac, waypoint);
                         }
-                        addConstraint(next_obstacle_constraint_idx++, constraintFactors, {low, upp});
                     }
                 }
             }
@@ -253,6 +255,52 @@ private:
                               }, {0, 0});
             }
         }
+    }
+
+    void addObstacleConstraint(size_t constraint_idx,
+                                const Ctrl<N_DIM> &q,
+                                const QPVector3d &p,
+                                const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                const HorizontalLine &obstacle,
+                                size_t waypoint) {
+        double low = -INF;
+        double upp = INF;
+
+        //printf("position (x=%f, y=%f, z=%f), closest on obstacle: (x=%f, y=%f, z=%f)\n", x, y, z, obstacle[tipXYZ][0], obstacle[tipXYZ][1], obstacle[tipXYZ][2]);
+        double offset = obstacle.getBypassOffset()[Axis::Z];
+        double bound = obstacle[p][Axis::Z] + offset;
+        bound -= p[Axis::Z];
+        bound += jacobian.row(Axis::Z) * q;
+
+        if (offset > CENTIMETER) {
+            //printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be >= %f\n", x, y, z, Axis::Z,  obstacle[tipXYZ][Axis::Z] + offset);
+            // Bypass from above.
+            low = bound;
+        } else if (offset < -CENTIMETER) {
+            //printf("position (x=%f, y=%f, z=%f) is close to obstacle, so position at axis=%d should be <= %f\n", x, y, z, Axis::Z,  obstacle[tipXYZ][Axis::Z] + offset);
+            // Bypass from below.
+            upp = bound;
+        }
+
+        addObstacleConstraint(constraint_idx, jacobian, waypoint, low, upp);
+    }
+
+    void addDummyObstacleConstraint(size_t constraint_idx,
+                                    const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                    size_t waypoint) {
+        addObstacleConstraint(constraint_idx, jacobian, waypoint, -INF, INF);                            
+    }
+
+    void addObstacleConstraint(size_t constraint_idx,
+                                const QPMatrix<XYZ_AXES.size(), N_DIM> &jacobian,
+                                size_t waypoint,
+                                double low,
+                                double upp) {
+        std::vector<Factor> constraintFactors(N_DIM);
+        for (int i = 0; i < N_DIM; ++i) {
+            constraintFactors[i] = {nthPos(waypoint) + i, jacobian(Axis::Z, i)};
+        }
+        addConstraint(constraint_idx, constraintFactors, {low, upp});
     }
 };
 

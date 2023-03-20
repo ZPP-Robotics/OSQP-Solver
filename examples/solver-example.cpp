@@ -9,7 +9,7 @@
 #include <chrono>
 #include <fstream>
 
-constexpr const size_t WAYPOINTS = 40;
+constexpr const size_t WAYPOINTS = 50;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -42,7 +42,7 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                       { HorizontalLine{{0, 1}, {0, 0, 0.3}}, HorizontalLine{{1, 0}, {0.3, 0.5, 0.3}} },
+                       { HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, 0.1}), HorizontalLine({1, 0}, {0.3, 0.5, 0.3}, {0, 0, 0.1}) },
                        m,
                        &inverse_kinematics);
 

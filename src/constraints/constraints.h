@@ -8,7 +8,7 @@
 
 namespace constraints {
 
-    const double INF = OSQP_INFTY;
+    const double INF = 1e30;
 
     // N-dimensional bound (upper or lower).
     template<size_t N>

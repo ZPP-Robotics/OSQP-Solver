@@ -40,15 +40,13 @@ public:
         auto qp_solver = QPSolver{constraint_builder.build(), problem_matrix};
         qp_solver.setWarmStart(warm_start);
 
-        QPVector last_solution;
+        QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
 
-        for (auto i = 0; i < 20; i++) {
+        for (auto i = 0; i < 5; i++) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
-                last_solution = solution;
-                last_code = exit_code;
                 break;
             }
 

@@ -41,17 +41,21 @@ public:
      * X == A + ((P-A) dot D)D
      * Returns perpendicular: X-P
      */
-    [[nodiscard]] QPVector3d getDistanceVec(const QPVector3d &P) const {
+    QPVector3d getDistanceVec(const QPVector3d &P) const {
         QPVector3d X = A + (P - A).dot(D) * D;
         return X - P;
+    }
+
+    QPVector2d getDistanceVecXY(const QPVector3d &P) const {
+        QPVector3d dist = getDistanceVec(P);
+        return QPVector2d{dist[0], dist[1]};
     }
 
     /**
      * Return "horizontal" distance from P to line.
      */
-    [[nodiscard]] double getDistanceXY(const QPVector3d &P) const {
-        QPVector3d dist = getDistanceVec(P);
-        return QPVector2d{dist[0], dist[1]}.norm();
+    double getDistanceXY(const QPVector3d &P) const {
+        return getDistanceVecXY(P).norm();
     }
 
     /**
@@ -65,6 +69,20 @@ public:
         return bypassOffset;
     }
 
+    bool areOnOppositeSides(const QPVector3d &P, const QPVector3d &Q) const {
+        QPVector2d distP = getDistanceVecXY(P);
+        QPVector2d distQ = getDistanceVecXY(Q);
+        bool res = distP.dot(distQ) < 0;
+        if (res) {
+            printf("points (%f, %f, %f) and (%f, %f, %f) are on opposite sides of line (dir=(%f, %f))\n", P[0], P[1], P[2], Q[0], Q[1], Q[2], D[0], D[1]);
+        }
+                                    
+        return res;
+    }
+
+    bool isClose(const QPVector3d &P, double radius) const {
+        return getDistanceXY(P) < radius;
+    }
 
 
 };
