@@ -15,9 +15,6 @@ using namespace constraints;
 // <lower_bounds, constraint_matrix, upper_bounds>
 using QPConstraints = std::tuple<QPVector, QPMatrixSparse, QPVector>;
 
-using ForwardKinematicsFun = std::function<std::tuple<double, double, double>(double *)>;
-using JacobianFun = std::function<void(double *, double *)>;
-
 template<size_t N_DIM>
 class ConstraintBuilder {
 
@@ -98,14 +95,14 @@ public:
             // Make each specified joint avoid a given obstacle.
 
             for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
-                QPVector p_trajectory = mapJointTrajectoryToXYZ(trajectory, forward_kinematics_fun);
+                QPVector p_trajectory = mapJointTrajectoryToXYZ<N_DIM>(trajectory, forward_kinematics_fun);
 
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
                     Point p = p_trajectory.segment(waypoint * 3, 3);
                     Jacobian jac;
                     jacobian_fun((double *) jac.data(), (double *) q.data());
-                    if (obstacle.hasCollision(waypoint, p_trajectory, 10 * CENTIMETER)) {
+                    if (obstacle.hasCollision(waypoint, p_trajectory)) {
                         addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
                     } else {
                         addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
@@ -256,15 +253,6 @@ private:
         addConstraint(constraint_idx, constraintFactors, {low, upp});
     }
 
-    QPVector mapJointTrajectoryToXYZ(const QPVector &trajectory, const ForwardKinematicsFun &mapper) {
-        QPVector trajectory_xyz(3 * waypoints);
-        for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
-            Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
-            auto [x, y, z] = mapper((double *) q.data());
-            trajectory_xyz.segment(3 * waypoint, 3) = Point{x, y, z};
-        }
-        return trajectory_xyz;
-    }
 };
 
 #endif //CONSTRAINT_BUILDER_H

@@ -42,8 +42,7 @@ public:
 
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
-
-        for (auto i = 0; i < 5; i++) {
+        while (true) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
@@ -52,6 +51,10 @@ public:
 
             last_code = ExitCode::kOptimal;
             last_solution = solution;
+            if (isSolutionOK(last_solution)) {
+                break;
+            }
+            
             qp_solver.update(
                     constraint_builder
                             .withObstacles(obstacles, solution)
@@ -104,6 +107,23 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                 .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
                 .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
                 .withObstacles(obstacles, warm_start);
+    }
+
+    bool isSolutionOK(const QPVector &q_trajectory) const {
+        for (const auto &[fk_fun, _] : mappers) {
+            QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, fk_fun);
+            for (const auto &obstacle : obstacles) {
+                int waypoints = trajectory_xyz.size() / 3;
+                for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+                    Point p = trajectory_xyz.segment(waypoint * 3, 3);
+                    if (obstacle.hasCollision(waypoint, trajectory_xyz)
+                        && !obstacle.isAbove(p)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
 };

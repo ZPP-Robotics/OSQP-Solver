@@ -41,7 +41,7 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                       { HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, 0.1}), HorizontalLine({1, 0}, {0.3, 0.5, 0.3}, {0, 0, 0.1}) },
+                       { HorizontalLine({0, 1}, {0, 0, 0.3}, {0, 0, -0.1}), HorizontalLine({1, 0}, {0.3, 0.5, 0.3}, {0, 0, 0.1}) },
                        mappers,
                        &inverse_kinematics);
 

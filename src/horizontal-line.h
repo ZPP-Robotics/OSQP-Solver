@@ -75,15 +75,15 @@ public:
         return distP.dot(distQ) < 0;
     }
 
-    bool isClose(const Point &P, double radius) const {
-        return getDistanceXY(P) < radius;
+    bool isClose(const Point &P) const {
+        return getDistanceXY(P) < bypassOffset.norm();
     }
 
-    bool hasCollision(int waypoint, const QPVector &trajectory_xyz, double collision_radius) const {
+    bool hasCollision(int waypoint, const QPVector &trajectory_xyz) const {
         int waypoints = trajectory_xyz.size() / 3;        
         Point p = trajectory_xyz.segment(3 * waypoint, 3);
 
-        if (isClose(p, collision_radius)) return true;
+        if (isClose(p)) return true;
         if (waypoint > 0) {
             Point p_prev = trajectory_xyz.segment(3 * (waypoint - 1), 3);
             if (areOnOppositeSides(p_prev, p)) return true;
@@ -95,6 +95,11 @@ public:
         return false;
     }
 
+    bool isAbove(const Point &P) const {
+        return bypassOffset[Axis::Z] > 0 
+            ? (P - A - bypassOffset)[Axis::Z] >= -CENTIMETER
+            : (P - A - bypassOffset)[Axis::Z] <= +CENTIMETER;
+    }
 
 };
 
