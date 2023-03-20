@@ -9,7 +9,7 @@
 #include <chrono>
 #include <fstream>
 
-constexpr const size_t WAYPOINTS = 20;
+constexpr const size_t WAYPOINTS = 40;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -35,14 +35,14 @@ int main() {
 
     std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
     m[0] = {&forward_kinematics, &joint_jacobian};
-    m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+    m[2] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
 
     GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
                        triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                       { HorizontalLine{{0, 1}, {0, 0, 0.3}} },
+                       { HorizontalLine{{0, 1}, {0, 0, 0.3}}, HorizontalLine{{1, 0}, {0.3, 0.5, 0.3}} },
                        m,
                        &inverse_kinematics);
 
@@ -51,8 +51,8 @@ int main() {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        Point   end_pos_gt = toPoint<6>({-M_PI,0,0,0,0,0});
-        auto [e, b1] = s.run({0,0,0,0,0,0}, {-M_PI,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
+        auto [e, b1] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
