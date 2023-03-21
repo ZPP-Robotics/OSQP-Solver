@@ -6,11 +6,13 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
-// def solve(start_pos_joints: Tuple[float x 6], end_pos_tcp: Tuple[float x 3], time_step: float, waypoints_count: int, velocity_constraints: Tuple[List[float x 6], List[float x 6]], acceleration_constraints: Tuple[List[float x 6], List[float x 6]], position_constraints: Tuple[List[float x 6], List[float x 6]], obstacles: List[Obstacle]) -> Tuple[List[float x 6], List[float x 6], List[float x 6]]
+namespace py = pybind11;
 
 struct Obstacle {
     int x;
 };
+
+// def solve(start_pos_joints: Tuple[float x 6], end_pos_tcp: Tuple[float x 3], time_step: float, waypoints_count: int, velocity_constraints: Tuple[List[float x 6], List[float x 6]], acceleration_constraints: Tuple[List[float x 6], List[float x 6]], position_constraints: Tuple[List[float x 6], List[float x 6]], obstacles: List[Obstacle]) -> Tuple[List[float x 6], List[float x 6], List[float x 6]]
 
 std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>> solve(
     std::array<float, 6> start_pos_joints, 
@@ -33,4 +35,4 @@ PYBIND11_MODULE(gomp, m) {
 }
 
 // Compile using:
-// g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/gomp-solver-wrapper.cpp -o gomp`python3-config --extension-suffix`
+// g++ -O3 -Wall -shared -std=gnu++11 `python3-config --cflags --ldflags --libs` src/gomp-solver-wrapper.cpp -o gomp.so -fPIC -I/home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include

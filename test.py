@@ -1,8 +1,5 @@
 import ctypes
-
-# Load the shared object library
-mylib = ctypes.CDLL("./gomp.cpython-39-x86_64-linux-gnu.so")
-
+import gomp
 
 start_pos_joints = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 end_pos_tcp = [1.0, 2.0, 3.0]
@@ -11,7 +8,7 @@ waypoints_count = 10
 velocity_constraints = ([], [])
 acceleration_constraints = ([], [])
 position_constraints = ([], [])
-obstacles = [mylib.Obstacle(1), mylib.Obstacle(2), mylib.Obstacle(3)]
+obstacles = [gomp.Obstacle(1), gomp.Obstacle(2), gomp.Obstacle(3)]
 
-result = mylib.solve(start_pos_joints, end_pos_tcp, time_step, waypoints_count, velocity_constraints, acceleration_constraints, position_constraints, obstacles)
+result = gomp.solve(start_pos_joints, end_pos_tcp, time_step, waypoints_count, velocity_constraints, acceleration_constraints, position_constraints, obstacles)
 print(result)
