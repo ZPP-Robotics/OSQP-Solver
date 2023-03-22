@@ -116,7 +116,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                 int waypoints = trajectory_xyz.size() / 3;
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Point p = trajectory_xyz.segment(waypoint * 3, 3);
-                    if (obstacle.hasCollision(waypoint, trajectory_xyz)
+                    if (obstacle.hasCollision(waypoint, trajectory_xyz, 5 * CENTIMETER)
                         && !obstacle.isAbove(p)) {
                         return false;
                     }

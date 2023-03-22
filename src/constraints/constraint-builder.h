@@ -102,7 +102,7 @@ public:
                     Point p = p_trajectory.segment(waypoint * 3, 3);
                     Jacobian jac;
                     jacobian_fun((double *) jac.data(), (double *) q.data());
-                    if (obstacle.hasCollision(waypoint, p_trajectory)) {
+                    if (obstacle.hasCollision(waypoint, p_trajectory, 5 * CENTIMETER)) {
                         addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
                     } else {
                         addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
@@ -217,21 +217,19 @@ private:
                                 const Jacobian &jacobian,
                                 const HorizontalLine &obstacle,
                                 size_t waypoint) {
-        double offset = obstacle.getBypassOffset()[Axis::Z];
-        double bound = obstacle[p][Axis::Z] + offset;
+        double bound = obstacle[p][Axis::Z];
         bound -= p[Axis::Z];
         bound += jacobian.row(Axis::Z) * q;
 
         double low = -INF;
         double upp = INF;
-        if (offset > CENTIMETER) {
-            // Bypass from above.
-            low = bound;
-        } else if (offset < -CENTIMETER) {
+        if (obstacle.bypassFromBelow()) {
             // Bypass from below.
             upp = bound;
+        } else {
+            // Bypass from above.
+            low = bound;
         }
-
         addObstacleConstraint(constraint_idx, jacobian, waypoint, low, upp);
     }
 

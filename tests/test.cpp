@@ -51,7 +51,7 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
 }
 
 TEST(LineUtilTest, XAxis) {
-    HorizontalLine line{{2, 0}, {1, 1, 1}, {0, 0, 0.1}};
+    HorizontalLine line{{2, 0}, {1, 1, 1}};
 
     EXPECT_EQ(line.getDistanceVec({2, 1, 1}).norm(), 0);
     EXPECT_EQ(line.getDistanceVec({1, 2, 1}).norm(), 1);

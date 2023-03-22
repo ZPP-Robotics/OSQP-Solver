@@ -12,7 +12,7 @@ private:
      */
     const QPVector3d D;
     const Point A;
-    const QPVector3d bypassOffset;
+    const bool bypass_from_below = false;
 
     static QPVector3d fromXY(const QPVector2d &v) {
         return {v[0], v[1], 0};
@@ -20,10 +20,10 @@ private:
 
 public:
 
-    HorizontalLine(const QPVector2d &direction, const Point &point, QPVector3d bypassOffset)
+    HorizontalLine(const QPVector2d &direction, const Point &point, bool bypass_from_below = false)
             : D(fromXY(direction) / direction.norm()),
               A(point),
-              bypassOffset(bypassOffset) {}
+              bypass_from_below(bypass_from_below) {}
 
     /**
      * P - some point
@@ -65,25 +65,23 @@ public:
         return P + getDistanceVec(P);
     };
 
-    QPVector3d getBypassOffset() const {
-        return bypassOffset;
-    }
-
     bool areOnOppositeSides(const Point &P, const Point &Q) const {
         QPVector2d distP = getDistanceVecXY(P);
         QPVector2d distQ = getDistanceVecXY(Q);
         return distP.dot(distQ) < 0;
     }
 
-    bool isClose(const Point &P) const {
-        return getDistanceXY(P) < bypassOffset.norm();
+    bool isClose(const Point &P, double radius) const {
+        assert(radius > CENTIMETER);
+        return getDistanceXY(P) < radius;
     }
 
-    bool hasCollision(int waypoint, const QPVector &trajectory_xyz) const {
+    bool hasCollision(int waypoint, const QPVector &trajectory_xyz, double radius) const {
+        assert(radius > CENTIMETER);
         int waypoints = trajectory_xyz.size() / 3;        
         Point p = trajectory_xyz.segment(3 * waypoint, 3);
 
-        if (isClose(p)) return true;
+        if (isClose(p, radius)) return true;
         if (waypoint > 0) {
             Point p_prev = trajectory_xyz.segment(3 * (waypoint - 1), 3);
             if (areOnOppositeSides(p_prev, p)) return true;
@@ -96,9 +94,13 @@ public:
     }
 
     bool isAbove(const Point &P) const {
-        return bypassOffset[Axis::Z] > 0 
-            ? (P - A - bypassOffset)[Axis::Z] >= -CENTIMETER
-            : (P - A - bypassOffset)[Axis::Z] <= +CENTIMETER;
+        return bypass_from_below
+            ? (P - A)[Axis::Z] <= +CENTIMETER 
+            : (P - A)[Axis::Z] >= -CENTIMETER;
+    }
+
+    bool bypassFromBelow() const {
+        return bypass_from_below;
     }
 
 };
