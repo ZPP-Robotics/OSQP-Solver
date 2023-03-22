@@ -40,7 +40,7 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(-1), of<DIMS>(1)),
                        constraints::inRange<DIMS>(of<DIMS>(-1), of<DIMS>(1)),
                        constraints::inRange<3>({{-INF, -0.3, 0.05}}, {{INF, INF, 0.7}}),
-                       {}, // { HorizontalLine({0, 1}, {0, 0, 0.5}, false) },
+                       { HorizontalLine({0, 1}, {0, 0, 0.5}, false) },
                        mappers,
                        &inverse_kinematics);
 

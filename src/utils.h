@@ -40,8 +40,11 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {
         nonZeroValues.emplace_back(i, i, a);
-        if (i + 1 + diagonal_num < n) {
-            nonZeroValues.emplace_back(i, i + 1 + diagonal_num, b);
+        if (i + diagonal_num < n) {
+            nonZeroValues.emplace_back(i, i + diagonal_num, b);
+        }
+        if (i - diagonal_num > 0) {
+            nonZeroValues.emplace_back(i, i - diagonal_num, b);
         }
     }
     m.setFromTriplets(nonZeroValues.begin(), nonZeroValues.end());
