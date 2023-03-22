@@ -9,7 +9,7 @@
 #include <chrono>
 #include <fstream>
 
-constexpr const size_t WAYPOINTS = 50;
+constexpr const size_t WAYPOINTS = 100;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -21,8 +21,8 @@ using namespace std;
 
 // maximum and minimum values of joint angles
 // in fact it is -2pi and 2pi but -pi and pi is enough to get everywhere
-constexpr double Q_MIN = - M_PI;
-constexpr double Q_MAX =   M_PI;
+constexpr double Q_MIN = - 2 * M_PI;
+constexpr double Q_MAX =   2 * M_PI;
 
 // Converts joint angles to site_xpos (x, y, z)
 template<size_t N>
@@ -37,10 +37,10 @@ int main() {
 
     GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
-                       constraints::inRange<DIMS>(of<DIMS>(-0.3), of<DIMS>(0.3)),
-                       triDiagonalMatrix(2, -1, VARS, WAYPOINTS * DIMS, DIMS),
-                       { HorizontalLine({0, 1}, {0, 0, 0.2}, true), HorizontalLine({1, 0}, {0.3, -0.6, 0.6}) },
+                       constraints::inRange<DIMS>(of<DIMS>(-INF), of<DIMS>(INF)),
+                       constraints::inRange<DIMS>(of<DIMS>(-INF), of<DIMS>(INF)),
+                       constraints::inRange<3>({{-INF, -0.3, -INF}}, {{INF, INF, INF}}),
+                       {}, // { HorizontalLine({0, 1}, {0, 0, 0.5}, false) },
                        mappers,
                        &inverse_kinematics);
 
@@ -48,8 +48,8 @@ int main() {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
-        auto [e, b1] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({-M_PI,0,0,0,0,0});
+        auto [e, b1] = s.run({0,0,0,0,0,0}, {-M_PI,0,0,0,0,0});
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");

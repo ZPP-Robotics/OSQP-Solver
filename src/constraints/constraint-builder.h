@@ -85,31 +85,39 @@ public:
         return *this;
     }
 
-    ConstraintBuilder &withObstacles(
-            const std::vector<HorizontalLine> &obstacles,
-            const QPVector &trajectory) {
+    ConstraintBuilder &withObstacles(const Constraint<3> &con_3d,
+                                    const std::vector<HorizontalLine> &obstacles,
+                                    const QPVector &trajectory) {
         size_t obstacle_constraints_base = userConstraintOffset + N_DIM * waypoints * 3;
         size_t next_obstacle_constraint_idx = obstacle_constraints_base;
 
-        for (const auto &obstacle : obstacles) {
-            // Make each specified joint avoid a given obstacle.
+        for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
+            QPVector p_trajectory = mapJointTrajectoryToXYZ<N_DIM>(trajectory, forward_kinematics_fun);
+            for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+                Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
+                Point p = p_trajectory.segment(waypoint * 3, 3);
+                Jacobian jac;
+                jacobian_fun((double *) jac.data(), (double *) q.data());
+                for (int i = 0; i < N_DIM; ++i) {
+                    std::swap(jac(Axis::X, i), jac(Axis::Y, i));
+                }
 
-            for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
-                QPVector p_trajectory = mapJointTrajectoryToXYZ<N_DIM>(trajectory, forward_kinematics_fun);
+                add3dPositionConstraint(next_obstacle_constraint_idx, con_3d, q, p, jac, waypoint);
+                next_obstacle_constraint_idx += 3;
 
-                for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
-                    Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
-                    Point p = p_trajectory.segment(waypoint * 3, 3);
-                    Jacobian jac;
-                    jacobian_fun((double *) jac.data(), (double *) q.data());
+                for (const auto &obstacle : obstacles) {
+                    // Make specified joint avoid a given obstacle.
                     if (obstacle.hasCollision(waypoint, p_trajectory, 5 * CENTIMETER)) {
-                        addObstacleConstraint(next_obstacle_constraint_idx++, q, p, jac, obstacle, waypoint);
+                        addObstacleVerticalConstraint(next_obstacle_constraint_idx++, obstacle, q, p, jac, waypoint);
                     } else {
-                        addDummyObstacleConstraint(next_obstacle_constraint_idx++, jac, waypoint);
+                        // Add dummy constraint so that at each iteration
+                        // matrix of constraints has non-zero elements in exactly the same cells.
+                        add3dPositionConstraint(next_obstacle_constraint_idx++, Axis::Z, jac, waypoint, -INF, INF);
                     }
                 }
             }
         }
+        
         return *this;
     }
 
@@ -211,11 +219,35 @@ private:
         }
     }
 
-    void addObstacleConstraint(size_t constraint_idx,
+    void add3dPositionConstraint(size_t constraint_idx,
+                                const Constraint<3> &con_3d,
                                 const Ctrl<N_DIM> &q,
                                 const Point &p,
                                 const Jacobian &jacobian,
+                                size_t waypoint) {
+        auto &[low, upp] = con_3d;
+        for (auto axis : XYZ_AXES) {
+            double axis_low = -INF;
+            double axis_upp = INF;
+            if (low.has_value()) {
+                axis_low = (*low)[axis];
+                axis_low -= p[axis];
+                axis_low += jacobian.row(axis) * q;
+            }
+            if (upp.has_value()) {
+                axis_upp = (*upp)[axis];
+                axis_upp -= p[axis];
+                axis_upp += jacobian.row(axis) * q;
+            }
+            add3dPositionConstraint(constraint_idx++, axis, jacobian, waypoint, axis_low, axis_upp);
+        }
+    }
+
+    void addObstacleVerticalConstraint(size_t constraint_idx,
                                 const HorizontalLine &obstacle,
+                                const Ctrl<N_DIM> &q,
+                                const Point &p,
+                                const Jacobian &jacobian,
                                 size_t waypoint) {
         double bound = obstacle[p][Axis::Z];
         bound -= p[Axis::Z];
@@ -230,24 +262,20 @@ private:
             // Bypass from above.
             low = bound;
         }
-        addObstacleConstraint(constraint_idx, jacobian, waypoint, low, upp);
+        add3dPositionConstraint(constraint_idx, Axis::Z, jacobian, waypoint, low, upp);
     }
 
-    void addDummyObstacleConstraint(size_t constraint_idx,
-                                    const Jacobian &jacobian,
-                                    size_t waypoint) {
-        addObstacleConstraint(constraint_idx, jacobian, waypoint, -INF, INF);                            
-    }
-
-    void addObstacleConstraint(size_t constraint_idx,
+    void add3dPositionConstraint(size_t constraint_idx,
+                                Axis axis,
                                 const Jacobian &jacobian,
                                 size_t waypoint,
                                 double low,
                                 double upp) {
         std::vector<Factor> constraintFactors(N_DIM);
         for (int i = 0; i < N_DIM; ++i) {
-            constraintFactors[i] = {nthPos(waypoint) + i, jacobian(Axis::Z, i)};
+            constraintFactors[i] = {nthPos(waypoint) + i, jacobian(axis, i)};
         }
+        printf("3D position at waypoint %d at axis %d must be in range [%f, %f]", waypoint, axis, low, upp); 
         addConstraint(constraint_idx, constraintFactors, {low, upp});
     }
 

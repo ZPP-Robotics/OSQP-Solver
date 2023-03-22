@@ -14,19 +14,20 @@ class GOMPSolver {
 public:
 
     GOMPSolver(size_t waypoints, double time_step,
-               const Constraint<N_DIM> &pos_con,
-               const Constraint<N_DIM> &vel_con,
-               const Constraint<N_DIM> &acc_con,
-               const QPMatrixSparse &P,
-               const std::vector<HorizontalLine> &obstacles,
-               const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
-               const InverseKinematics &ik)
+                const Constraint<N_DIM> &pos_con,
+                const Constraint<N_DIM> &vel_con,
+                const Constraint<N_DIM> &acc_con,
+                const Constraint<3> &con_3d,
+                const std::vector<HorizontalLine> &obstacles,
+                const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
+                const InverseKinematics &ik)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
               vel_con(vel_con),
               acc_con(acc_con),
-              problem_matrix(P),
+              con_3d(con_3d),
+              problem_matrix(triDiagonalMatrix(2, -1, max_waypoints * N_DIM * 2, max_waypoints * N_DIM, N_DIM)),
               obstacles(obstacles),
               mappers(m),
               ik(ik) {
@@ -42,7 +43,8 @@ public:
 
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
-        while (true) {
+        int it = 0;
+        while (it++ < 50) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
@@ -51,13 +53,13 @@ public:
 
             last_code = ExitCode::kOptimal;
             last_solution = solution;
-            if (isSolutionOK(last_solution)) {
-                break;
-            }
+            // if (isSolutionOK(last_solution)) {
+            //     break;
+            // }
             
             qp_solver.update(
                     constraint_builder
-                            .withObstacles(obstacles, solution)
+                            .withObstacles(con_3d, obstacles, solution)
                             .build()
             );
         }
@@ -71,6 +73,7 @@ private:
     const Constraint<N_DIM> pos_con;
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;
+    const Constraint<3> con_3d;
     const QPMatrixSparse problem_matrix;
     const std::vector<HorizontalLine> obstacles;
     const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
@@ -106,7 +109,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                 .position(max_waypoints - 1, constraints::equal<N_DIM>(end_pos))
                 .velocity(max_waypoints - 1, EQ_ZERO<N_DIM>)
                 .acceleration(max_waypoints - 2, EQ_ZERO<N_DIM>)
-                .withObstacles(obstacles, warm_start);
+                .withObstacles(con_3d, obstacles, warm_start);
     }
 
     bool isSolutionOK(const QPVector &q_trajectory) const {
