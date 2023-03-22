@@ -43,7 +43,7 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
         if (i + diagonal_num < n) {
             nonZeroValues.emplace_back(i, i + diagonal_num, b);
         }
-        if (i - diagonal_num > 0) {
+        if (i - diagonal_num >= offset) {
             nonZeroValues.emplace_back(i, i - diagonal_num, b);
         }
     }
