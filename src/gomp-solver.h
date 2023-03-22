@@ -43,19 +43,19 @@ public:
 
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
-        int it = 0;
-        while (it++ < 50) {
+        while (true) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
                 break;
             }
 
-            last_code = ExitCode::kOptimal;
             last_solution = solution;
-            // if (isSolutionOK(last_solution)) {
-            //     break;
-            // }
+            if (isSolutionOK(last_solution)) {
+                last_code = ExitCode::kOptimal;
+
+                break;
+            }
             
             qp_solver.update(
                     constraint_builder
@@ -113,18 +113,33 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
     }
 
     bool isSolutionOK(const QPVector &q_trajectory) const {
+        auto [low, upp] = con_3d;
+
         for (const auto &[fk_fun, _] : mappers) {
             QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, fk_fun);
-            for (const auto &obstacle : obstacles) {
                 int waypoints = trajectory_xyz.size() / 3;
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Point p = trajectory_xyz.segment(waypoint * 3, 3);
-                    if (obstacle.hasCollision(waypoint, trajectory_xyz, 5 * CENTIMETER)
-                        && !obstacle.isAbove(p)) {
-                        return false;
+                    printf("(%f, %f, %f)\n", p[Axis::X], p[Axis::Y], p[Axis::Z]);
+                    for (auto axis : XYZ_AXES) {
+                        double axis_low = -INF;
+                        double axis_upp = INF;
+                        if (low.has_value()) {
+                            axis_low = (*low)[axis];
+                        }
+                        if (upp.has_value()) {
+                            axis_upp = (*upp)[axis];
+                        }
+                        if (!(axis_low - CENTIMETER <= p[axis] && p[axis] <= axis_upp + CENTIMETER)) return false;
+                    }
+
+                    for (const auto &obstacle : obstacles) {
+                        if (obstacle.hasCollision(waypoint, trajectory_xyz, 5 * CENTIMETER)
+                            && !obstacle.isAbove(p)) {
+                            return false;
+                        }
                     }
                 }
-            }
         }
         return true;
     }

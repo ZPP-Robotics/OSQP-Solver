@@ -98,9 +98,9 @@ public:
                 Point p = p_trajectory.segment(waypoint * 3, 3);
                 Jacobian jac;
                 jacobian_fun((double *) jac.data(), (double *) q.data());
-                for (int i = 0; i < N_DIM; ++i) {
-                    std::swap(jac(Axis::X, i), jac(Axis::Y, i));
-                }
+                // for (int i = 0; i < N_DIM; ++i) {
+                //     std::swap(jac(Axis::X, i), jac(Axis::Y, i));
+                // }
 
                 add3dPositionConstraint(next_obstacle_constraint_idx, con_3d, q, p, jac, waypoint);
                 next_obstacle_constraint_idx += 3;
@@ -275,7 +275,7 @@ private:
         for (int i = 0; i < N_DIM; ++i) {
             constraintFactors[i] = {nthPos(waypoint) + i, jacobian(axis, i)};
         }
-        printf("3D position at waypoint %d at axis %d must be in range [%f, %f]", waypoint, axis, low, upp); 
+        //printf("3D position at waypoint %d at axis %d must be in range [%f, %f]", waypoint, axis, low, upp); 
         addConstraint(constraint_idx, constraintFactors, {low, upp});
     }
 

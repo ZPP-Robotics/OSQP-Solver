@@ -37,9 +37,9 @@ int main() {
 
     GOMPSolver<DIMS> s(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-INF), of<DIMS>(INF)),
-                       constraints::inRange<DIMS>(of<DIMS>(-INF), of<DIMS>(INF)),
-                       constraints::inRange<3>({{-INF, -0.3, -INF}}, {{INF, INF, INF}}),
+                       constraints::inRange<DIMS>(of<DIMS>(-1), of<DIMS>(1)),
+                       constraints::inRange<DIMS>(of<DIMS>(-1), of<DIMS>(1)),
+                       constraints::inRange<3>({{-INF, -0.3, 0.05}}, {{INF, INF, 0.7}}),
                        {}, // { HorizontalLine({0, 1}, {0, 0, 0.5}, false) },
                        mappers,
                        &inverse_kinematics);
@@ -48,8 +48,8 @@ int main() {
         auto start = std::chrono::high_resolution_clock::now();
 
         Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        Point   end_pos_gt = toPoint<6>({-M_PI,0,0,0,0,0});
-        auto [e, b1] = s.run({0,0,0,0,0,0}, {-M_PI,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
+        auto [e, b1] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
         auto output_file_xyz = ofstream("output_trajectory_xyz.data");
