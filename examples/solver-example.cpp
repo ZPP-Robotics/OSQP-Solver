@@ -10,7 +10,7 @@
 #include <fstream>
 
 constexpr const double TIME_STEP = 0.1;
-constexpr const size_t WAYPOINTS = 20 + 2;
+constexpr const size_t WAYPOINTS = 30 + 2;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -39,7 +39,7 @@ int main() {
     GOMPSolver<DIMS> fff(WAYPOINTS,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * TIME_STEP), of<DIMS>(M_PI * TIME_STEP)),
-                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 360 * TIME_STEP), of<DIMS>(M_PI * 800 / 360 * TIME_STEP)),
+                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180 * TIME_STEP * TIME_STEP), of<DIMS>(M_PI * 800 / 180 * TIME_STEP * TIME_STEP)),
                        constraints::inRange<3>({{-INF, -0.28, 0.00}}, {{INF, INF, 0.7}}),
                        { },
                        mappers,

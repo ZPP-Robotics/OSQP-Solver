@@ -29,25 +29,24 @@ public:
               obstacles(obstacles),
               mappers(m),
               ik(ik) {
-        assert(max_waypoints >= 2);
+        assert(max_waypoints >= 4);
     }
 
     std::pair<ExitCode, QPVector> run(Ctrl<N_DIM> start_pos, Ctrl<N_DIM> end_pos) {
         QPVector last_solution = calcWarmStart(start_pos, end_pos);
         ExitCode last_code = ExitCode::kUnknown;
-        // for (int i = 10; i >= 10; --i) {
-        //     int waypoints = max_waypoints;
-        //     QPVector warm_start(waypoints * N_DIM * 2);
-        //     warm_start << last_solution.segment(0, waypoints * N_DIM), last_solution.segment(waypoints * N_DIM, waypoints * N_DIM);
-        //     auto [exit_code, solution] = run(start_pos, end_pos, waypoints, warm_start);
-        //     if (exit_code != ExitCode::kOptimal) {
-        //         break;
-        //     }
-        //     last_code = ExitCode::kOptimal;
-        //     last_solution = solution;
-        // }
-        // return {last_code, last_solution};
-        return run(start_pos, end_pos, max_waypoints, last_solution);
+        for (int i = 10; i >= 1; --i) {
+            int waypoints = max_waypoints * i / 10;
+            QPVector warm_start(waypoints * N_DIM * 2);
+            warm_start << last_solution.segment(0, waypoints * N_DIM), last_solution.segment(waypoints * N_DIM, waypoints * N_DIM);
+            auto [exit_code, solution] = run(start_pos, end_pos, waypoints, warm_start);
+            if (exit_code != ExitCode::kOptimal) {
+                break;
+            }
+            last_code = ExitCode::kOptimal;
+            last_solution = solution;
+        }
+        return {last_code, last_solution};
     }
 
     std::pair<ExitCode, QPVector> run(Ctrl<N_DIM> start_pos, Ctrl<N_DIM> end_pos,
@@ -63,7 +62,7 @@ public:
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
         int i = 0;
-        while (true) {
+        while (i++ < 5) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
@@ -136,18 +135,25 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         auto [low, upp] = con_3d;
         bool res = true;
         int waypoints = q_trajectory.size() / N_DIM / 2;
+        Ctrl<N_DIM> prevV = Eigen::VectorXd::Zero(N_DIM);
         for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
             Ctrl<N_DIM> q = q_trajectory.segment(N_DIM * waypoint, N_DIM);
+            printf("waypoint %d\n", waypoint);
             printf("q: (");
             for (int i = 0; i < N_DIM; ++i) {
                 printf("%f, ", q[i]);
             }
-            printf("), v(");
+            printf(")\nv: (");
             Ctrl<N_DIM> v = q_trajectory.segment(waypoints * N_DIM + N_DIM * waypoint, N_DIM);
             for (int i = 0; i < N_DIM; ++i) {
                 printf("%f, ", v[i]);
             }
-            printf(")\n");
+            printf(")\nacc: (");
+            for (int i = 0; i < N_DIM; ++i) {
+                printf("%f, ", v[i] - prevV[i]);
+            }
+            prevV = v;
+            printf(")\n\n");
         
         }
 
