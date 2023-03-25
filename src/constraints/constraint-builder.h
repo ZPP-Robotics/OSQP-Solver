@@ -36,10 +36,6 @@ public:
         lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), -INF);
         upperBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), INF);
         // Add default constraints -INF < var < INF.
-
-        positions(0, waypoints - 1, ANY<N_DIM>);
-        velocities(0, waypoints - 2, ANY<N_DIM>);
-        accelerations(0, waypoints - 3, ANY<N_DIM>);
     }
 
     ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
@@ -211,7 +207,7 @@ private:
                                       {baseV + j,     timestep},
                                       {baseNextP + j, -1},
                                       {baseP + j,     1}
-                              }, {-0.001, 0.001});
+                              }, {0.001, 0.001});
             }
         }
     }

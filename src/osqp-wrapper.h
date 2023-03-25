@@ -17,8 +17,6 @@ public:
         auto &[l, A, u] = c;
         OsqpInstance instance;
 
-
-        std::cout << A << std::endl;
         instance.constraint_matrix = A;
         instance.objective_matrix = P;
         instance.objective_vector.setZero(A.cols());
