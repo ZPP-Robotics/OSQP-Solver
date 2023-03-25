@@ -13,7 +13,7 @@ class GOMPSolver {
 
 public:
 
-    GOMPSolver(size_t waypoints,
+    GOMPSolver(size_t waypoints, 
                 const Constraint<N_DIM> &pos_con,
                 const Constraint<N_DIM> &vel_con,
                 const Constraint<N_DIM> &acc_con,
@@ -146,11 +146,11 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
             printf(")\nv: (");
             Ctrl<N_DIM> v = q_trajectory.segment(waypoints * N_DIM + N_DIM * waypoint, N_DIM);
             for (int i = 0; i < N_DIM; ++i) {
-                printf("%f, ", v[i]);
+                printf("%f, ", v[i] * 10);
             }
             printf(")\nacc: (");
             for (int i = 0; i < N_DIM; ++i) {
-                printf("%f, ", v[i] - prevV[i]);
+                printf("%f, ", (v[i] - prevV[i]) * 10 * 10);
             }
             prevV = v;
             printf(")\n\n");
