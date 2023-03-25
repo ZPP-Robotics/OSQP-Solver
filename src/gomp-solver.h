@@ -59,7 +59,7 @@ public:
             constraint_builder.build(),
             triDiagonalMatrix(2, -1, waypoints * N_DIM * 2, waypoints * N_DIM, N_DIM)
         };
-        //qp_solver.setWarmStart(warm_start);
+        qp_solver.setWarmStart(warm_start);
 
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
@@ -121,7 +121,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         // Set end velocity to zero.
         assert (waypoints >= 4);
         Ctrl<N_DIM> q = end_pos;
-        printf("(%f, %f, %f, %f, %f, %f)\n", q[0], q[1], q[2], q[3], q[4], q[5]);
+        printf("(%f, %f)\n", q[0], q[1]);
 
         return ConstraintBuilder<N_DIM>{waypoints, time_step, mappers}
                 .position(0, constraints::equal<N_DIM>(start_pos))
@@ -137,6 +137,12 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
     bool isSolutionOK(const QPVector &q_trajectory) const {
         auto [low, upp] = con_3d;
         bool res = true;
+        int waypoints = q_trajectory.size() / N_DIM / 2;
+        for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+            Ctrl<N_DIM> q = q_trajectory.segment(N_DIM * waypoint, N_DIM);
+            printf("(%f, %f)\n", q[0], q[1]);
+        }
+
         printf("dupa\n");
         for (const auto &[fk_fun, _] : mappers) {
             printf("solution for end effector: \n");
@@ -145,8 +151,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Point p = trajectory_xyz.segment(waypoint * 3, 3);
                     printf("(%f, %f, %f)\n", p[Axis::X], p[Axis::Y], p[Axis::Z]);
-                    Ctrl<N_DIM> q = q_trajectory.segment(N_DIM * waypoint, N_DIM);
-                    printf("(%f, %f, %f, %f, %f, %f)\n", q[0], q[1], q[2], q[3], q[4], q[5]);
+
                     for (auto axis : XYZ_AXES) {
                         double axis_low = -INF;
                         double axis_upp = INF;

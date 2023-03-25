@@ -12,7 +12,7 @@
 constexpr const double TIME_STEP = 0.001;
 constexpr const size_t WAYPOINTS = (3 + 1);
 constexpr const int PROPERTIES = 2;
-constexpr const size_t DIMS = 6;
+constexpr const size_t DIMS =2;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
 
 
@@ -60,7 +60,7 @@ int main() {
     //     // auto [e, b1] = fff.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0}, WAYPOINTS, b1tt);
 
     //     printf("THIRD: \n");
-        auto [e, b1] = fff.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
+        auto [e, b1] = fff.run({0,0}, {M_PI,0});
 // std::cout << ToString(e) << endl;
 
     //     auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");
