@@ -24,6 +24,7 @@ public:
         instance.upper_bounds = u;
 
         OsqpSettings settings;
+        settings.verbose = true;
         auto status = solver.Init(instance, settings);
         assert(status.ok());
     }

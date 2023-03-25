@@ -23,7 +23,7 @@ class ConstraintBuilder {
     using Jacobian = QPMatrix<3, N_DIM>;
 
     // position + velocity + acceleration + linearized constraints for obstacles avoidance
-    static constexpr const size_t DYNAMICS_DERIVATIVES = 4;
+    static constexpr const size_t DYNAMICS_DERIVATIVES = 3;
 
 public:
 
@@ -31,17 +31,19 @@ public:
                         double timestep,
                         const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m)
             : waypoints(waypoints), timestep(timestep), mappers(m) {
-        linkVelocityToPosition();
+        //linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
-
-        lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES * mappers.size(), -INF);
-        upperBounds.resize(userConstraintOffset + N_DIM * waypoints * DYNAMICS_DERIVATIVES * mappers.size(), INF);
-
+        printf("mappers: %d\n", m.size());
+        lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), -INF);
+        upperBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), INF);
+        printf("mappers2: %d\n", m.size());
         // Add default constraints -INF < var < INF.
 
         positions(0, waypoints - 1, ANY<N_DIM>);
-        velocities(0, waypoints - 1, ANY<N_DIM>);
-        accelerations(0, waypoints - 2, ANY<N_DIM>);
+        velocities(0, waypoints - 2, ANY<N_DIM>);
+        accelerations(0, waypoints - 3, ANY<N_DIM>);
+                printf("mappers3: %d\n", m.size());
+
     }
 
     ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
@@ -53,10 +55,12 @@ public:
     }
 
     ConstraintBuilder &velocity(size_t i, const Constraint<N_DIM> &c) {
+        assert (0 <= i && i < waypoints - 1);
         return velocities(i, i, c);
     }
 
     ConstraintBuilder &velocities(size_t first, size_t last, const Constraint<N_DIM> &c) {
+        assert (first <= last && 0 <= first && last < waypoints - 1);
         return variablesInRange(nthVelocity(first), nthVelocity(last), c);
     }
 
@@ -68,7 +72,7 @@ public:
     }
 
     ConstraintBuilder &acceleration(size_t i, const Constraint<N_DIM> &c) {
-        assert(i < waypoints - 1);
+        assert(i + 2 < waypoints);
         size_t baseA = nthAcceleration(i);
         size_t baseV = nthVelocity(i);
         size_t baseNextV = nthVelocity(i + 1);
@@ -78,7 +82,7 @@ public:
             addConstraint(userConstraintOffset + baseA + j,
                           {
                                   {baseNextV + j, 1 / timestep},
-                                  {baseV + j,-1 / timestep}
+                                  {baseV + j, -1 / timestep}
                           },
                           getConstraintForNthDim(j, c));
         }
@@ -98,9 +102,6 @@ public:
                 Point p = p_trajectory.segment(waypoint * 3, 3);
                 Jacobian jac;
                 jacobian_fun((double *) jac.data(), (double *) q.data());
-                // for (int i = 0; i < N_DIM; ++i) {
-                //     std::swap(jac(Axis::X, i), jac(Axis::Y, i));
-                // }
 
                 add3dPositionConstraint(next_obstacle_constraint_idx, con_3d, q, p, jac, waypoint);
                 next_obstacle_constraint_idx += 3;
@@ -147,7 +148,7 @@ private:
     std::vector<double> upperBounds;
 
     [[nodiscard]] size_t nthVelocity(size_t i) const {
-        assert(i < waypoints);
+        assert(i < waypoints - 1);
         return waypoints * N_DIM + nthPos(i);
     }
 
@@ -157,7 +158,7 @@ private:
     }
 
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
-        assert(i < waypoints - 1);
+        assert(i < waypoints - 2);
         return waypoints * N_DIM * 2 + i * N_DIM;
     }
 

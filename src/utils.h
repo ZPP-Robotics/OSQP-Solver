@@ -73,6 +73,7 @@ template<size_t N>
 QPVector mapJointTrajectoryToXYZ(const QPVector &trajectory, const ForwardKinematicsFun &mapper) {
     int waypoints = trajectory.size() / 2 / N;
     QPVector trajectory_xyz(3 * waypoints);
+    printf("mapping trajectory Q to XYZ. Waypoints XYZ: %d\n", waypoints);
     for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
         Ctrl<N> q = trajectory.segment(waypoint * N, N);
         auto [x, y, z] = mapper((double *) q.data());
