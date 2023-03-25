@@ -33,6 +33,6 @@ file(GLOB_RECURSE *.h)
 file(GLOB_RECURSE constraints/*.h)
 # analytical_ik
 include_directories(${Kinematics_UR5e_arm_SOURCE_DIR}/src)
-add_library(qp_solver INTERFACE gomp-solver.h)
+add_library(qp_solver gomp-solver.h)
 target_link_libraries(qp_solver INTERFACE analytical_ik osqp-cpp Eigen3::Eigen)
 set_target_properties(qp_solver PROPERTIES LINKER_LANGUAGE CXX)
