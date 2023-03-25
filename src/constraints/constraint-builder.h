@@ -151,7 +151,7 @@ private:
 
     [[nodiscard]] size_t nthAcceleration(size_t i) const {
         assert(i < waypoints - 2);
-        return waypoints * N_DIM * 2 + i * N_DIM;
+        return waypoints * N_DIM + (waypoints - 1) * N_DIM + i * N_DIM;
     }
 
     std::pair<std::optional<double>, std::optional<double>>

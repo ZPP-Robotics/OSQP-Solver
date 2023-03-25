@@ -39,8 +39,8 @@ int main() {
     GOMPSolver<DIMS> fff(WAYPOINTS,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * TIME_STEP), of<DIMS>(M_PI * TIME_STEP)),
-                       constraints::ANY<DIMS>,//constraints::inRange<DIMS>(of<DIMS>(-M_2_PI * 800 / 360), of<DIMS>(M_2_PI * 800 / 360)),
-                       constraints::inRange<3>({{-INF, -0.3, 0.00}}, {{INF, INF, 0.7}}),
+                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 360 * TIME_STEP), of<DIMS>(M_PI * 800 / 360 * TIME_STEP)),
+                       constraints::inRange<3>({{-INF, -0.28, 0.00}}, {{INF, INF, 0.7}}),
                        { },
                        mappers,
                        &inverse_kinematics);
@@ -48,8 +48,8 @@ int main() {
     // for (int i = 0; i < 1; ++i) {
     //     auto start = std::chrono::high_resolution_clock::now();
         
-        // Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        // Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
+        Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
     //     // printf("FIRST: \n");
     //     // auto [et, b12] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
     //     // printf("SECOND: \n");
