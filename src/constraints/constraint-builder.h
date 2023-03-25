@@ -28,14 +28,15 @@ class ConstraintBuilder {
 public:
 
     ConstraintBuilder(size_t waypoints,
-                        double timestep,
                         const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m)
-            : waypoints(waypoints), timestep(timestep), mappers(m) {
+            : waypoints(waypoints), mappers(m) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
-        lowerBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), -INF);
-        upperBounds.resize(userConstraintOffset + N_DIM * waypoints * (DYNAMICS_DERIVATIVES + mappers.size()), INF);
+        lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 4 * waypoints * mappers.size()), -INF);
+        upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 4 * waypoints * mappers.size()), INF);
         // Add default constraints -INF < var < INF.
+        // positions(0, waypoints - 1, constraints::ANY<N_DIM>);
+        // velocities(0, waypoints - 2, constraints::ANY<N_DIM>);
     }
 
     ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
@@ -70,11 +71,11 @@ public:
         size_t baseNextV = nthVelocity(i + 1);
 
         for (int j = 0; j < N_DIM; j++) {
-            // l <= 1/timestep * (v_{t+1} - v_{t} ) <= u
+            // l <= (v_{t+1} - v_{t} ) <= u
             addConstraint(userConstraintOffset + baseA + j,
                           {
-                                  {baseNextV + j, 1 / timestep},
-                                  {baseV + j, -1 / timestep}
+                                  {baseNextV + j, 1},
+                                  {baseV + j, -1}
                           },
                           getConstraintForNthDim(j, c));
         }
@@ -84,7 +85,7 @@ public:
     ConstraintBuilder &withObstacles(const Constraint<3> &con_3d,
                                     const std::vector<HorizontalLine> &obstacles,
                                     const QPVector &trajectory) {
-        size_t obstacle_constraints_base = userConstraintOffset + N_DIM * waypoints * 3;
+        size_t obstacle_constraints_base = userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2);
         size_t next_obstacle_constraint_idx = obstacle_constraints_base;
 
         for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
@@ -116,7 +117,7 @@ public:
 
     QPConstraints build() {
         QPMatrixSparse A;
-        A.resize(lowerBounds.size(), N_DIM * waypoints * 2); // 2 = one for position one for velocity
+        A.resize(lowerBounds.size(), N_DIM * 2 * waypoints); // 2 = one for position one for velocity
 
         // On duplicate, overwrite cell value with the newest Triplet.
         A.setFromTriplets(linearSystem.begin(), linearSystem.end(), [](const auto &a, const auto &b) { return b; });
@@ -131,7 +132,6 @@ public:
 private:
 
     const size_t waypoints;
-    const double timestep;
     size_t userConstraintOffset = 0;
     std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
 
@@ -204,10 +204,10 @@ private:
                 upperBounds.push_back(INF);
                 addConstraint(lowerBounds.size() - 1,
                               {
-                                      {baseV + j,     timestep},
+                                      {baseV + j,     1},
                                       {baseNextP + j, -1},
                                       {baseP + j,     1}
-                              }, {0.001, 0.001});
+                              }, {0, 0});
             }
         }
     }

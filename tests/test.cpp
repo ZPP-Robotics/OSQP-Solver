@@ -1,7 +1,6 @@
 #include "gtest/gtest.h"
 #include "constraints/constraint-builder.h"
 
-const double DEFAULT_TIME_STEP = 2;
 const size_t DEFAULT_WAYPOINTS_CNT = 2;
 
 /**
@@ -28,17 +27,17 @@ void expect_vectors_eq(QPVector3d a, QPVector3d b) {
 
 TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
     /**
-     * v_i == (q_i + 1 - q_i) / DEFAULT_TIME_STEP
+     * v_i == (q_i + 1 - q_i)
      *
      * so
      *
-     * v_i * DEFAULT_TIME_STEP - q_{i + 1} + q_i  == 0
+     * v_i - q_{i + 1} + q_i  == 0
      *
      * These 'velocity-position linking' constraints should be placed
      * at first (DEFAULT_WAYPOINTS_CNT - 1) rows of constraint matrix.
      */
 
-    auto [l, A, u] = ConstraintBuilder<1>{DEFAULT_WAYPOINTS_CNT, DEFAULT_TIME_STEP, {}}.build();
+    auto [l, A, u] = ConstraintBuilder<1>{DEFAULT_WAYPOINTS_CNT, {}}.build();
 
     for (size_t i = 0; i < DEFAULT_WAYPOINTS_CNT - 1; ++i) {
         expect_equality_constraint(i, l, u);
@@ -46,7 +45,7 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
         // Check factors of the constrained formula.
         EXPECT_EQ(A.coeff(i, i), 1); // 1 * q_i
         EXPECT_EQ(A.coeff(i, i + 1), -1); // (-1) * q_{i + 1}
-        EXPECT_EQ(A.coeff(i, DEFAULT_WAYPOINTS_CNT + i), DEFAULT_TIME_STEP); // v_i * DEFAULT_TIME_STEP
+        EXPECT_EQ(A.coeff(i, DEFAULT_WAYPOINTS_CNT + i), 1); // v_i
     }
 }
 

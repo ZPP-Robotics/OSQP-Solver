@@ -13,7 +13,7 @@ class GOMPSolver {
 
 public:
 
-    GOMPSolver(size_t waypoints, double time_step,
+    GOMPSolver(size_t waypoints,
                 const Constraint<N_DIM> &pos_con,
                 const Constraint<N_DIM> &vel_con,
                 const Constraint<N_DIM> &acc_con,
@@ -22,7 +22,6 @@ public:
                 const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
                 const InverseKinematics &ik)
             : max_waypoints(waypoints),
-              time_step(time_step),
               pos_con(pos_con),
               vel_con(vel_con),
               acc_con(acc_con),
@@ -57,7 +56,7 @@ public:
 
         auto qp_solver = QPSolver{
             constraint_builder.build(),
-            triDiagonalMatrix(2, -1, waypoints * N_DIM * 2, waypoints * N_DIM, N_DIM)
+            triDiagonalMatrix(2, -1, N_DIM * 2 * waypoints, waypoints * N_DIM, N_DIM)
         };
         qp_solver.setWarmStart(warm_start);
 
@@ -88,7 +87,6 @@ public:
 
 private:
 
-    const double time_step;
     const size_t max_waypoints;
     const Constraint<N_DIM> pos_con;
     const Constraint<N_DIM> vel_con;
@@ -105,7 +103,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         QPVector velocities;
         velocities.setZero(max_waypoints * N_DIM);
 
-        QPVector warm_start(2 * max_waypoints * N_DIM);
+        QPVector warm_start(2 * max_waypoints* N_DIM);
         warm_start << positions, velocities;
 
         return warm_start;
@@ -123,10 +121,10 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         Ctrl<N_DIM> q = end_pos;
         printf("(%f, %f)\n", q[0], q[1]);
 
-        return ConstraintBuilder<N_DIM>{waypoints, time_step, mappers}
+        return ConstraintBuilder<N_DIM>{waypoints, mappers}
                 .position(0, constraints::equal<N_DIM>(start_pos))
                 .positions(1, waypoints - 2, pos_con)
-                .positions(waypoints - 3, waypoints - 1, constraints::equal<N_DIM>(end_pos))
+                .position(waypoints - 3, constraints::equal<N_DIM>(end_pos))
                 .velocities(0, waypoints - 4, vel_con)
                 .velocity(waypoints - 3, EQ_ZERO<N_DIM>)
                 .accelerations(0, waypoints - 4, acc_con)
@@ -140,10 +138,19 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         int waypoints = q_trajectory.size() / N_DIM / 2;
         for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
             Ctrl<N_DIM> q = q_trajectory.segment(N_DIM * waypoint, N_DIM);
-            printf("(%f, %f)\n", q[0], q[1]);
+            printf("q: (");
+            for (int i = 0; i < N_DIM; ++i) {
+                printf("%f, ", q[i]);
+            }
+            printf("), v(");
+            Ctrl<N_DIM> v = q_trajectory.segment(waypoints * N_DIM + N_DIM * waypoint, N_DIM);
+            for (int i = 0; i < N_DIM; ++i) {
+                printf("%f, ", v[i]);
+            }
+            printf(")\n");
+        
         }
 
-        printf("dupa\n");
         for (const auto &[fk_fun, _] : mappers) {
             printf("solution for end effector: \n");
             QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, fk_fun);
@@ -161,7 +168,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                         if (upp.has_value()) {
                             axis_upp = (*upp)[axis];
                         }
-                        if (!(axis_low - 1 * CENTIMETER <= p[axis] && p[axis] <= axis_upp + 1 * CENTIMETER)) res = false;
+                        if (!(axis_low - 2 * CENTIMETER <= p[axis] && p[axis] <= axis_upp + 2 * CENTIMETER)) res = false;
                     }
 
                     for (const auto &obstacle : obstacles) {
