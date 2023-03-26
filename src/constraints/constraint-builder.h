@@ -32,8 +32,9 @@ public:
             : waypoints(waypoints), mappers(m) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
-        lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 4 * waypoints * mappers.size()), -INF);
-        upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 4 * waypoints * mappers.size()), INF);
+        // TODO: include obstacle constraints in bounds size.
+        lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 3 * waypoints * mappers.size()), -INF);
+        upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + 3 * waypoints * mappers.size()), INF);
         // Add default constraints -INF < var < INF.
         // positions(0, waypoints - 1, constraints::ANY<N_DIM>);
         // velocities(0, waypoints - 2, constraints::ANY<N_DIM>);
@@ -99,16 +100,16 @@ public:
                 add3dPositionConstraint(next_obstacle_constraint_idx, con_3d, q, p, jac, waypoint);
                 next_obstacle_constraint_idx += 3;
 
-                for (const auto &obstacle : obstacles) {
-                    // Make specified joint avoid a given obstacle.
-                    if (obstacle.hasCollision(waypoint, p_trajectory, 5 * CENTIMETER)) {
-                        addObstacleVerticalConstraint(next_obstacle_constraint_idx++, obstacle, q, p, jac, waypoint);
-                    } else {
-                        // Add dummy constraint so that at each iteration
-                        // matrix of constraints has non-zero elements in exactly the same cells.
-                        add3dPositionConstraint(next_obstacle_constraint_idx++, Axis::Z, jac, waypoint, -INF, INF);
-                    }
-                }
+                // for (const auto &obstacle : obstacles) {
+                //     // Make specified joint avoid a given obstacle.
+                //     if (obstacle.hasCollision(waypoint, p_trajectory, 5 * CENTIMETER)) {
+                //         addObstacleVerticalConstraint(next_obstacle_constraint_idx++, obstacle, q, p, jac, waypoint);
+                //     } else {
+                //         // Add dummy constraint so that at each iteration
+                //         // matrix of constraints has non-zero elements in exactly the same cells.
+                //         add3dPositionConstraint(next_obstacle_constraint_idx++, Axis::Z, jac, waypoint, -INF, INF);
+                //     }
+                // }
             }
         }
         

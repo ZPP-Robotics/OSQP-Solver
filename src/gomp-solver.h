@@ -62,7 +62,7 @@ public:
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
         int i = 0;
-        while (i++ < 5) {
+        while (true) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 // There are no solutions.
