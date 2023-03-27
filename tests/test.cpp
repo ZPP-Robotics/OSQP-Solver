@@ -37,7 +37,7 @@ TEST(ConstraintBuilderTest, linkingVelocityToPosition) {
      * at first (DEFAULT_WAYPOINTS_CNT - 1) rows of constraint matrix.
      */
 
-    auto [l, A, u] = ConstraintBuilder<1>{DEFAULT_WAYPOINTS_CNT, {}}.build();
+    auto [l, A, u] = ConstraintBuilder<1>{DEFAULT_WAYPOINTS_CNT, {}, {}}.build();
 
     for (size_t i = 0; i < DEFAULT_WAYPOINTS_CNT - 1; ++i) {
         expect_equality_constraint(i, l, u);

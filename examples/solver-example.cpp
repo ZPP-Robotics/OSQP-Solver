@@ -28,7 +28,7 @@ constexpr double Q_MAX =   2 * M_PI;
 // Converts joint angles to site_xpos (x, y, z)
 template<size_t N>
 Point toPoint(const Ctrl<N> &c) {
-    auto [x, y, z] = forward_kinematics((double *) c.data());
+    auto [x, y, z] = forward_kinematics_4((double *) c.data());
     return {x, y, z};
 }
 
@@ -43,8 +43,11 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * TIME_STEP), of<DIMS>(M_PI * TIME_STEP)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180 * TIME_STEP * TIME_STEP), of<DIMS>(M_PI * 800 / 180 * TIME_STEP * TIME_STEP)),
-                       constraints::inRange<3>({{-INF, -0.3, -0.1}}, {{INF, INF, 0.2}}),
-                       {},
+                       constraints::inRange<3>({{-INF, -0.3, -0.3}}, {{INF, INF, INF}}),
+                       {
+                        HorizontalLine({0, 1}, {-0.1, 0, 0.2}, true),
+                        HorizontalLine({0, 1}, {0.3, 0, 0.5}, false)
+                       },
                        mappers,
                        &inverse_kinematics);
 
@@ -63,7 +66,7 @@ int main() {
     //     // auto [e, b1] = fff.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0}, WAYPOINTS, b1tt);
 
     //     printf("THIRD: \n");
-        auto [e, b1] = fff.run({0,0, 0, 0, 0, 0}, {-M_PI,0, 0, 0, 0, 0});
+        auto [e, b1] = fff.run({0,0, 0, 0, 0, 0}, {M_PI,0, 0, 0, 0, 0});
 std::cout << ToString(e) << endl;
 
         auto output_file_ctrl = ofstream("output_trajectory_ctrl.data");

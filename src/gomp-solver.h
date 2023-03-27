@@ -76,7 +76,7 @@ public:
             
             qp_solver.update(
                 constraint_builder
-                .withObstacles(con_3d, obstacles, solution)
+                .withObstacles(con_3d, solution)
                 .build()
             );
         }
@@ -120,7 +120,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         Ctrl<N_DIM> q = end_pos;
         printf("(%f, %f)\n", q[0], q[1]);
 
-        return ConstraintBuilder<N_DIM>{waypoints, mappers}
+        return ConstraintBuilder<N_DIM>{waypoints, mappers, obstacles}
                 .position(0, constraints::equal<N_DIM>(start_pos))
                 .positions(1, waypoints - 2, pos_con)
                 .position(waypoints - 3, constraints::equal<N_DIM>(end_pos))
@@ -128,7 +128,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                 .velocity(waypoints - 3, EQ_ZERO<N_DIM>)
                 .accelerations(0, waypoints - 4, acc_con)
                 .acceleration(waypoints - 3, EQ_ZERO<N_DIM>)
-                .withObstacles(con_3d, obstacles, warm_start);
+                .withObstacles(con_3d, warm_start);
     }
 
     bool isSolutionOK(const QPVector &q_trajectory) const {
