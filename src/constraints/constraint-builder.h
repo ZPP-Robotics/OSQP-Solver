@@ -33,12 +33,16 @@ public:
             : waypoints(waypoints), mappers(m), obstacles(obstacles) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
-        // TODO: include obstacle constraints in bounds size.
+
+        // for each joint:
+        //   `waypoints` constriants for joint position,
+        //   `waypoints - 1` constraints for joint velocity,
+        //   `waypoints - 2` constraints for joint acceleration,
+        // and for each joint, for each FK function :
+        //   3 * `waypoints` constraints for end effector position (X Y Z),
+        //   `waypoints` * obstacles constraints for avoiding in Z axis the horizontal lines.
         lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + (3 + obstacles.size()) * waypoints * mappers.size()), -INF);
         upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + (3 + obstacles.size()) * waypoints * mappers.size()), INF);
-        // Add default constraints -INF < var < INF.
-        // positions(0, waypoints - 1, constraints::ANY<N_DIM>);
-        // velocities(0, waypoints - 2, constraints::ANY<N_DIM>);
     }
 
     ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
@@ -269,7 +273,6 @@ private:
         for (int i = 0; i < N_DIM; ++i) {
             constraintFactors[i] = {nthPos(waypoint) + i, jacobian(axis, i)};
         }
-        //printf("3D position at waypoint %d at axis %d must be in range [%f, %f]", waypoint, axis, low, upp); 
         addConstraint(constraint_idx, constraintFactors, {low, upp});
     }
 

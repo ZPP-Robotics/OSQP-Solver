@@ -13,7 +13,7 @@ class GOMPSolver {
 
 public:
 
-    GOMPSolver(size_t waypoints, 
+    GOMPSolver(size_t waypoints, double time_step,
                 const Constraint<N_DIM> &pos_con,
                 const Constraint<N_DIM> &vel_con,
                 const Constraint<N_DIM> &acc_con,
@@ -22,9 +22,10 @@ public:
                 const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
                 const InverseKinematics &ik)
             : max_waypoints(waypoints),
+              time_step(time_step),
               pos_con(pos_con),
-              vel_con(vel_con),
-              acc_con(acc_con),
+              vel_con(scaled<N_DIM>(vel_con, time_step)),
+              acc_con(scaled<N_DIM>(acc_con, time_step * time_step)),
               con_3d(con_3d),
               obstacles(obstacles),
               mappers(m),
@@ -44,8 +45,9 @@ public:
                 break;
             }
             last_code = ExitCode::kOptimal;
-            last_solution = solution;
+            last_solution = solution;   
         }
+        last_solution.segment(last_solution.size() / 2, last_solution.size() / 2) /= time_step;
         return {last_code, last_solution};
     }
 
@@ -87,6 +89,7 @@ public:
 private:
 
     const size_t max_waypoints;
+    const double time_step;
     const Constraint<N_DIM> pos_con;
     const Constraint<N_DIM> vel_con;
     const Constraint<N_DIM> acc_con;

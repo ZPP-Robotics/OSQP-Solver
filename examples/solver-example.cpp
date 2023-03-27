@@ -39,10 +39,10 @@ int main() {
         {&forward_kinematics, &joint_jacobian},
     };
     
-    GOMPSolver<DIMS> fff(WAYPOINTS,
+    GOMPSolver<DIMS> fff(WAYPOINTS, TIME_STEP,
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * TIME_STEP), of<DIMS>(M_PI * TIME_STEP)),
-                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180 * TIME_STEP * TIME_STEP), of<DIMS>(M_PI * 800 / 180 * TIME_STEP * TIME_STEP)),
+                       constraints::inRange<DIMS>(of<DIMS>(-M_PI), of<DIMS>(M_PI)),
+                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180), of<DIMS>(M_PI * 800 / 180)),
                        constraints::inRange<3>({{-INF, -0.3, -0.3}}, {{INF, INF, INF}}),
                        {
                         HorizontalLine({0, 1}, {-0.1, 0, 0.2}, true),
@@ -50,7 +50,7 @@ int main() {
                        },
                        mappers,
                        &inverse_kinematics);
-
+    ;
     // for (int i = 0; i < 1; ++i) {
     //     auto start = std::chrono::high_resolution_clock::now();
         
