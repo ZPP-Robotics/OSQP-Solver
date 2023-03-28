@@ -177,7 +177,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                         if (upp.has_value()) {
                             axis_upp = (*upp)[axis];
                         }
-                        if (!(axis_low - 2 * CENTIMETER <= p[axis] && p[axis] <= axis_upp + 2 * CENTIMETER)) res = false;
+                        if (!(axis_low <= p[axis] && p[axis] <= axis_upp)) res = false;
                     }
 
                     for (const auto &obstacle : obstacles) {

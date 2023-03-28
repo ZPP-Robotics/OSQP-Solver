@@ -10,7 +10,7 @@
 #include <fstream>
 
 constexpr const double TIME_STEP = 0.1;
-constexpr const size_t WAYPOINTS = 180 + 2;
+constexpr const size_t WAYPOINTS = 50 + 2;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -43,10 +43,10 @@ int main() {
                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI), of<DIMS>(M_PI)),
                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180), of<DIMS>(M_PI * 800 / 180)),
-                       constraints::inRange<3>({{-INF, -0.3, -0.3}}, {{INF, INF, INF}}),
+                       constraints::inRange<3>({{-INF, -0.3, -0.1}}, {{INF, INF, INF}}),
                        {
-                        HorizontalLine({0, 1}, {-0.1, 0, 0.2}, true),
-                        HorizontalLine({0, 1}, {0.3, 0, 0.5}, false)
+                        HorizontalLine({0, 1}, {0, 0, 0.6}, true),
+                        // HorizontalLine({0, 1}, {0.3, 0, 0.5}, false)
                        },
                        mappers,
                        &inverse_kinematics);
