@@ -134,16 +134,6 @@ public:
         };
     }
 
-private:
-
-    const size_t waypoints;
-    size_t userConstraintOffset = 0;
-    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
-    std::vector<HorizontalLine> obstacles;
-    std::vector<MatrixCell> linearSystem{};
-    std::vector<double> lowerBounds;
-    std::vector<double> upperBounds;
-
     [[nodiscard]] size_t nthVelocity(size_t i) const {
         assert(i < waypoints - 1);
         return waypoints * N_DIM + i * N_DIM;
@@ -158,6 +148,16 @@ private:
         assert(i < waypoints - 2);
         return waypoints * N_DIM + (waypoints - 1) * N_DIM + i * N_DIM;
     }
+
+private:
+
+    const size_t waypoints;
+    size_t userConstraintOffset = 0;
+    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
+    std::vector<HorizontalLine> obstacles;
+    std::vector<MatrixCell> linearSystem{};
+    std::vector<double> lowerBounds;
+    std::vector<double> upperBounds;
 
     std::pair<std::optional<double>, std::optional<double>>
     getConstraintForNthDim(size_t n, const Constraint<N_DIM> &c) {
