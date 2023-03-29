@@ -7,6 +7,8 @@
 #include "osqp-wrapper.h"
 
 using InverseKinematics = std::function<int(double *, double, double, double)>;
+const int MAX_ITERATIONS = 100;
+const int SEGMENTS = 10;
 
 template<size_t N_DIM>
 class GOMPSolver {
@@ -36,8 +38,8 @@ public:
     std::pair<ExitCode, QPVector> run(Ctrl<N_DIM> start_pos, Ctrl<N_DIM> end_pos) {
         QPVector last_solution = calcWarmStart(start_pos, end_pos);
         ExitCode last_code = ExitCode::kUnknown;
-        for (int i = 10; i >= 1; --i) {
-            int waypoints = max_waypoints * i / 10;
+        for (int i = SEGMENTS; i >= 1; --i) {
+            int waypoints = max_waypoints * i / SEGMENTS;
             QPVector warm_start(waypoints * N_DIM * 2);
             warm_start << last_solution.segment(0, waypoints * N_DIM), last_solution.segment(waypoints * N_DIM, waypoints * N_DIM);
             auto [exit_code, solution] = run(start_pos, end_pos, waypoints, warm_start);
@@ -65,7 +67,7 @@ public:
         QPVector last_solution = warm_start;
         auto last_code = ExitCode::kUnknown;
         int i = 0;
-        while (true) {
+        while (i++ < MAX_ITERATIONS) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
                 last_solution = solution;
@@ -179,7 +181,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                         if (upp.has_value()) {
                             axis_upp = (*upp)[axis];
                         }
-                        if (!(axis_low - 1e-3 <= p[axis] && p[axis] <= axis_upp + 1e-3)) res = false;
+                        if (!(axis_low - ERROR <= p[axis] && p[axis] <= axis_upp + ERROR)) res = false;
                     }
 
                     for (const auto &obstacle : obstacles) {

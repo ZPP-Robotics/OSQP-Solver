@@ -28,6 +28,7 @@ enum Axis : size_t {
 constexpr const std::array<Axis, 3> XYZ_AXES = {X, Y, Z};
 
 constexpr const double CENTIMETER = 0.01;
+const double ERROR = 1e-3;
 
 /**
  * Creates nxn sparse matrix M so that

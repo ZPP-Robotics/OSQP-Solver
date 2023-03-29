@@ -95,8 +95,8 @@ public:
 
     bool isAbove(const Point &P) const {
         return bypass_from_below
-            ? (P - A)[Axis::Z] <= 0 
-            : (P - A)[Axis::Z] >= 0;
+            ? (P - A)[Axis::Z] <= ERROR 
+            : (P - A)[Axis::Z] >= -ERROR;
     }
 
     bool bypassFromBelow() const {
