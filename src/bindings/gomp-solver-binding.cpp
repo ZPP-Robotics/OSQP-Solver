@@ -22,8 +22,12 @@ namespace py = pybind11;
 
 const size_t N_DIM = 6;
 
-using single_constraint_t = std::array<float, 6>;
-using constraint_t = std::tuple<single_constraint_t, single_constraint_t>;
+using single_constraint_n_dim_t = std::array<float, N_DIM>;
+using constraint_n_dim_t = std::tuple<single_constraint_n_dim_t, single_constraint_n_dim_t>;
+
+using single_constraint_3d_t = std::array<float, 3>;
+using constraint_3d_t = std::tuple<single_constraint_3d_t, single_constraint_3d_t>;
+
 using point_t = std::tuple<float, float, float>;
 
 // std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>> solve_0(
@@ -46,7 +50,7 @@ constraints::Bound<N_DIM> createBound(const std::array<float, 6>& arr) {
     return Eigen::Vector<double, 6>(double_arr);
 }
 
-constraints::Constraint<N_DIM> createConstraint(constraint_t& constraint) {
+constraints::Constraint<N_DIM> createConstraintNDim(constraint_n_dim_t& constraint) {
     return {createBound(std::get<0>(constraint)), createBound(std::get<1>(constraint))};
 }
 
@@ -70,14 +74,15 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
     std::array<float, 6> end_pos_joints, 
     float time_step, 
     int waypoints_count, 
-    constraint_t velocity_constraints, 
-    constraint_t acceleration_constraints,
-    constraint_t position_constraints,
+    constraint_n_dim_t velocity_constraints, 
+    constraint_n_dim_t acceleration_constraints,
+    constraint_n_dim_t position_constraints,
+    constraint_3d_t constraints_3d,
     std::vector<std::tuple<point_t, point_t>> obstacles) {
 
-        constraints::Constraint<N_DIM> velocity_constraints_transformed = createConstraint(velocity_constraints);
-        constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraint(acceleration_constraints);
-        constraints::Constraint<N_DIM> position_constraints_transformed = createConstraint(position_constraints);
+        constraints::Constraint<N_DIM> velocity_constraints_transformed = createConstraintNDim(velocity_constraints);
+        constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraintNDim(acceleration_constraints);
+        constraints::Constraint<N_DIM> position_constraints_transformed = createConstraintNDim(position_constraints);
         
         std::vector<HorizontalLine> obstacles_transformed = createHorizontalLines(obstacles);
 
