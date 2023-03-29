@@ -5,7 +5,7 @@ project(gomp-solver)
 
 find_package(Python3 COMPONENTS Development)
 
-add_library(gomp ../src/bindings/gomp-solver-binding.cpp)
+add_library(gomp MODULE ../src/bindings/gomp-solver-binding.cpp)
 target_compile_options(gomp PRIVATE -O3 -Wall -std=gnu++11)
 target_link_libraries(gomp PRIVATE Python3::Python)
 target_include_directories(gomp PRIVATE /usr/include/eigen3/ /home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include/)
