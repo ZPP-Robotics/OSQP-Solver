@@ -53,8 +53,8 @@ std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t
         point_t direction = std::get<0>(obstacle);
         point_t point = std::get<1>(obstacle);
 
-        QPVector2D direction_vec{std::get<0>(direction), std::get<1>(direction)};
-        QPVector3D point_vec{std::get<0>(point), std::get<1>(point), std::get<2>(point)};
+        QPVector2d direction_vec{std::get<0>(direction), std::get<1>(direction)};
+        QPVector3d point_vec{std::get<0>(point), std::get<1>(point), std::get<2>(point)};
 
         horizontal_lines.push_back(HorizontalLine(direction_vec, point_vec));
     }
@@ -90,5 +90,7 @@ PYBIND11_MODULE(gomp, m) {
     m.def("solve_1", &solve_1, "Runs the GOMP solver.");
 }
 
-// Compile using:
+// Compile using (now compiled with CMakeLists.txt):
 // g++ -O3 -Wall -shared -std=gnu++11 `python3-config --cflags --ldflags --libs` ../src/bindings/gomp-solver-binding.cpp -o gomp.so -fPIC -I/home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include
+
+// Shared object library will be created. Make sure to rename the result file to: gomp.so
