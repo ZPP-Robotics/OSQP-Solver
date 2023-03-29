@@ -3,7 +3,10 @@
 #include <array>
 
 #include "../constraints/constraints.h"
+#include "../constraints/constraint-builder.h"
 #include "../horizontal-line.h"
+
+#include "../../Kinematics-UR5e-arm/src/analytical_ik.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -49,6 +52,7 @@ constraints::Constraint<N_DIM> createConstraint(constraint_t& constraint) {
 
 std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t, point_t>>& obstacles) {
     std::vector<HorizontalLine> horizontal_lines;
+
     for (auto& obstacle : obstacles) {
         point_t direction = std::get<0>(obstacle);
         point_t point = std::get<1>(obstacle);
@@ -75,7 +79,13 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
         constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraint(acceleration_constraints);
         constraints::Constraint<N_DIM> position_constraints_transformed = createConstraint(position_constraints);
         
-        
+        std::vector<HorizontalLine> obstacles_transformed = createHorizontalLines(obstacles);
+
+        std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
+        m[0] = {&forward_kinematics, &joint_jacobian};
+        m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+
+
 
         return {{{start_pos_joints.at(0),2,3,4,5,6}}, {{1,2,3,4,5,6}}, {{1,2,3,4,5,6}}};
     }
@@ -93,4 +103,4 @@ PYBIND11_MODULE(gomp, m) {
 // Compile using (now compiled with CMakeLists.txt):
 // g++ -O3 -Wall -shared -std=gnu++11 `python3-config --cflags --ldflags --libs` ../src/bindings/gomp-solver-binding.cpp -o gomp.so -fPIC -I/home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include
 
-// Shared object library will be created. Make sure to rename the result file to: gomp.so
+// Shared object library will be created. Make sure to rename the result file to: gomp.so, and move to the directory with test files.
