@@ -41,11 +41,12 @@ public:
             QPVector warm_start(waypoints * N_DIM * 2);
             warm_start << last_solution.segment(0, waypoints * N_DIM), last_solution.segment(waypoints * N_DIM, waypoints * N_DIM);
             auto [exit_code, solution] = run(start_pos, end_pos, waypoints, warm_start);
-            if (exit_code != ExitCode::kOptimal) {
+            if (exit_code != ExitCode::kOptimal && exit_code != ExitCode::kUnknown) {
                 break;
+            } else if (exit_code == ExitCode::kOptimal) {
+                last_code = ExitCode::kOptimal;
+                last_solution = solution;   
             }
-            last_code = ExitCode::kOptimal;
-            last_solution = solution;   
         }
         last_solution.segment(last_solution.size() / 2, last_solution.size() / 2) /= time_step;
         return {last_code, last_solution};
@@ -67,6 +68,7 @@ public:
         while (true) {
             auto [exit_code, solution] = qp_solver.solve();
             if (exit_code != ExitCode::kOptimal) {
+                last_solution = solution;
                 // There are no solutions.
                 break;
             }
@@ -177,7 +179,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
                         if (upp.has_value()) {
                             axis_upp = (*upp)[axis];
                         }
-                        if (!(axis_low <= p[axis] && p[axis] <= axis_upp)) res = false;
+                        if (!(axis_low - 1e-3 <= p[axis] && p[axis] <= axis_upp + 1e-3)) res = false;
                     }
 
                     for (const auto &obstacle : obstacles) {
