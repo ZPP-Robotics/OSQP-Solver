@@ -16,7 +16,7 @@ public:
     QPSolver(const QPConstraints &c, const QPMatrixSparse &P) {
         auto &[l, A, u] = c;
         OsqpInstance instance;
-
+        std::cout << l.size() << ", " << u.size() << ", " << A.cols() << ", " << A.rows() <<", " << P.rows() << ", " << P.cols() << std::endl;
         instance.constraint_matrix = A;
         instance.objective_matrix = P;
         instance.objective_vector.setZero(A.cols());
@@ -24,7 +24,9 @@ public:
         instance.upper_bounds = u;
 
         OsqpSettings settings;
+        settings.verbose = true;
         auto status = solver.Init(instance, settings);
+        
         assert(status.ok());
     }
 
