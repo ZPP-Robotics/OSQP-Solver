@@ -42,16 +42,18 @@ using point_t = std::tuple<float, float, float>;
 //         return {{{start_pos_joints.at(0),2,3,4,5,6}}, {{1,2,3,4,5,6}}, {{1,2,3,4,5,6}}};
 //     }
 
-constraints::Bound<N_DIM> createBound(const std::array<float, 6>& arr) {
-    const Eigen::Map<const Eigen::Array<float, 6, 1>> arr_map(arr.data());
+template<size_t N>
+constraints::Bound<N> createBound(const std::array<float, N>& arr) {
+    const Eigen::Map<const Eigen::Array<float, N, 1>> arr_map(arr.data());
 
-    const auto double_arr = arr_map.cast<double>();
+    const Eigen::Array<double, N, 1> double_arr = arr_map.template cast<double>();
     
-    return Eigen::Vector<double, 6>(double_arr);
+    return Eigen::Vector<double, N>(double_arr);
 }
 
-constraints::Constraint<N_DIM> createConstraintNDim(constraint_n_dim_t& constraint) {
-    return {createBound(std::get<0>(constraint)), createBound(std::get<1>(constraint))};
+template<size_t N>
+constraints::Constraint<N> createConstraint(constraint_n_dim_t& constraint) {
+    return {createBound<N>(std::get<0>(constraint)), createBound<N>(std::get<1>(constraint))};
 }
 
 std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t, point_t>>& obstacles) {
@@ -80,15 +82,16 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
     constraint_3d_t constraints_3d,
     std::vector<std::tuple<point_t, point_t>> obstacles) {
 
-        constraints::Constraint<N_DIM> velocity_constraints_transformed = createConstraintNDim(velocity_constraints);
-        constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraintNDim(acceleration_constraints);
-        constraints::Constraint<N_DIM> position_constraints_transformed = createConstraintNDim(position_constraints);
+        constraints::Constraint<N_DIM> velocity_constraints_transformed = createConstraint<N_DIM>(velocity_constraints);
+        constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraint<N_DIM>(acceleration_constraints);
+        constraints::Constraint<N_DIM> position_constraints_transformed = createConstraint<N_DIM>(position_constraints);
         
         std::vector<HorizontalLine> obstacles_transformed = createHorizontalLines(obstacles);
 
-        std::map<size_t, std::pair<ForwardKinematics, Jacobian>> m;
-        m[0] = {&forward_kinematics, &joint_jacobian};
-        m[1] = {&forward_kinematics_elbow_joint, &jacobian_elbow_joint};
+        std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers{ 
+            {&forward_kinematics_6_back, &joint_jacobian_6_back},
+            {&forward_kinematics, &joint_jacobian},
+        };
 
 
 
