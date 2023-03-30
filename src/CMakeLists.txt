@@ -12,13 +12,6 @@ set(Kinematics_UR5e_arm_BUILD_EXAMPLES OFF CACHE INTERNAL "Build kinematics exam
 FetchContent_MakeAvailable(Kinematics_UR5e_arm)
 
 FetchContent_Declare(
-        osqpcpp
-        # Specify the commit you depend on and update it regularly.
-        GIT_REPOSITORY https://github.com/google/osqp-cpp.git
-)
-FetchContent_MakeAvailable(osqpcpp)
-
-FetchContent_Declare(
   Eigen
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
   GIT_TAG master
@@ -28,6 +21,13 @@ set(EIGEN_BUILD_DOC OFF)
 set(BUILD_TESTING OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
 FetchContent_MakeAvailable(Eigen)
+
+FetchContent_Declare(
+        osqpcpp
+        # Specify the commit you depend on and update it regularly.
+        GIT_REPOSITORY https://github.com/google/osqp-cpp.git
+)
+FetchContent_MakeAvailable(osqpcpp)
 
 file(GLOB_RECURSE *.h)
 file(GLOB_RECURSE constraints/*.h)
