@@ -73,8 +73,8 @@ std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t
 }
 
 std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>> solve_1(
-    std::array<float, 6> start_pos_joints, 
-    std::array<float, 6> end_pos_joints, 
+    std::array<float, N_DIM> start_pos_joints, 
+    std::array<float, N_DIM> end_pos_joints, 
     float time_step, 
     int waypoints_count, 
     constraint_t<N_DIM> velocity_constraints, 
@@ -96,7 +96,7 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
             {&forward_kinematics, &joint_jacobian},
         };
 
-        GOMPSolver<N_DIM> gomp(waypoints_count,
+        GOMPSolver<N_DIM> gomp_obj(waypoints_count,
             time_step,
             position_constraints_transformed,
             velocity_constraints_transformed,
@@ -105,6 +105,17 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
             obstacles_transformed,
             mappers,
             &inverse_kinematics);
+
+        Ctrl<N_DIM> start_pos_joints_transformed;
+        Ctrl<N_DIM> end_pos_joints_transformed;
+
+        for (int i = 0; i < N_DIM; i++)
+        {
+            start_pos_joints_transformed(i) = static_cast<double>(start_pos_joints[i]);
+            end_pos_joints_transformed(i) = static_cast<double>(end_pos_joints[i]);
+        }
+
+        auto [e, b1] = gomp_obj.run(start_pos_joints_transformed, end_pos_joints_transformed);
 
         return {{{start_pos_joints.at(0),2,3,4,5,6}}, {{1,2,3,4,5,6}}, {{1,2,3,4,5,6}}};
     }
@@ -123,3 +134,16 @@ PYBIND11_MODULE(gomp, m) {
 // g++ -O3 -Wall -shared -std=gnu++11 `python3-config --cflags --ldflags --libs` ../src/bindings/gomp-solver-binding.cpp -o gomp.so -fPIC -I/home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include
 
 // Shared object library will be created. Make sure to rename the result file to: gomp.so, and move to the directory with test files.
+
+// Got this error:
+// /usr/bin/ld: ../_deps/abseil-cpp-build/absl/strings/libabsl_cordz_functions.a(cordz_functions.cc.o): relocation R_X86_64_TPOFF32 against symbol `_ZN4absl13cord_internal17cordz_next_sampleE' can not be used when making a shared object; recompile with -fPIC
+// /usr/bin/ld: failed to set dynamic section sizes: bad value
+// collect2: error: ld returned 1 exit status
+//
+// Did:
+// cd _deps/abseil-cpp-build/absl/strings/
+// make clean
+// make CXXFLAGS=-fPIC
+// Doesn't work
+//
+// Adding this to cmakelists works: set(CMAKE_POSITION_INDEPENDENT_CODE ON)
