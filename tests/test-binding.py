@@ -15,9 +15,9 @@ end_pos_joints = [M_PI] + [0] * (N_DIM - 1)
 
 position_constraints = ([Q_MIN] * N_DIM, [Q_MAX] * N_DIM)
 velocity_constraints = ([-M_PI] * N_DIM, [M_PI] * N_DIM)
-acceleration_constraints = ([-M_PI * 800 / 180], [M_PI * 800 / 180])
+acceleration_constraints = ([-M_PI * 800 / 180] * N_DIM, [M_PI * 800 / 180] * N_DIM)
 
-constraints_3d = ((-INF, -0.3, -0.1), (INF, INF, INF))
+constraints_3d = ([-INF, -0.3, -0.1], [INF, INF, INF])
 
 obstacles = [((0, 1, 0), (0, 0, 0.6), True)]
 
