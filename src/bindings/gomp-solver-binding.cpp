@@ -72,7 +72,7 @@ std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t
     return horizontal_lines;
 }
 
-std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>> solve_1(
+std::pair<OsqpExitCode, std::vector<double>> solve_1(
     std::array<float, N_DIM> start_pos_joints, 
     std::array<float, N_DIM> end_pos_joints, 
     float time_step, 
@@ -124,17 +124,31 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
 
         auto [e, b1] = gomp_obj.run(start_pos_joints_transformed, end_pos_joints_transformed);
 
-        return {{{start_pos_joints.at(0),2,3,4,5,6}}, {{1,2,3,4,5,6}}, {{1,2,3,4,5,6}}};
+        std::vector<double> return_vector(b1.data(), b1.data() + b1.size());
+
+        return std::make_pair(e, return_vector);
     }
 
+void define_enum(py::module &m) {
+  py::enum_<OsqpExitCode>(m, "OsqpExitCode")
+      .value("kOptimal", OsqpExitCode::kOptimal)
+      .value("kPrimalInfeasible", OsqpExitCode::kPrimalInfeasible)
+      .value("kDualInfeasible", OsqpExitCode::kDualInfeasible)
+      .value("kOptimalInaccurate", OsqpExitCode::kOptimalInaccurate)
+      .value("kPrimalInfeasibleInaccurate", OsqpExitCode::kPrimalInfeasibleInaccurate)
+      .value("kDualInfeasibleInaccurate", OsqpExitCode::kDualInfeasibleInaccurate)
+      .value("kMaxIterations", OsqpExitCode::kMaxIterations)
+      .value("kInterrupted", OsqpExitCode::kInterrupted)
+      .value("kTimeLimitReached", OsqpExitCode::kTimeLimitReached)
+      .value("kNonConvex", OsqpExitCode::kNonConvex)
+      .value("kUnknown", OsqpExitCode::kUnknown)
+      .export_values();
+}
+
 PYBIND11_MODULE(gomp, m) {
-    // pybind11::class_<Obstacle>(m, "Obstacle")
-    //     .def(pybind11::init<int>())
-    //     .def_readwrite("x", &Obstacle::x);
-
-    // m.def("solve_0", &solve_0, "Runs the GOMP solver.");
-
     m.def("solve_1", &solve_1, "Runs the GOMP solver.");
+
+    define_enum(m);
 }
 
 // Compile using (now compiled with CMakeLists.txt):
