@@ -15,10 +15,6 @@
 
 namespace py = pybind11;
 
-// struct Obstacle {
-//     int x;
-// };
-
 // def solve(start_pos_joints: Tuple[float x 6], end_pos_tcp: Tuple[float x 3], time_step: float, waypoints_count: int, velocity_constraints: Tuple[Tuple[float x 6], Tuple[float x 6]], acceleration_constraints: Tuple[Tuple[float x 6], Tuple[float x 6]], position_constraints: Tuple[Tuple[float x 6], Tuple[float x 6]], obstacles: List[Tuple[Tuple[float x 3], Tuple[float x 3]]]) -> Tuple[List[float x 6], List[float x 6], List[float x 6]]
 
 const size_t N_DIM = 6;
