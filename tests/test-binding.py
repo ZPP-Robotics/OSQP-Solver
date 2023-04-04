@@ -19,7 +19,7 @@ acceleration_constraints = ([-M_PI * 800 / 180], [M_PI * 800 / 180])
 
 constraints_3d = ((-INF, -0.3, -0.1), (INF, INF, INF))
 
-obstacles = [((1,2,3), (4,5,6)), ((1,2,3), (4,5,6))]
+obstacles = [((0, 1, 0), (0, 0, 0.6), True)]
 
 result = gomp.solve_1(start_pos_joints, end_pos_joints, time_step, waypoints_count, velocity_constraints, acceleration_constraints, position_constraints, constraints_3d, obstacles)
 print(result)
