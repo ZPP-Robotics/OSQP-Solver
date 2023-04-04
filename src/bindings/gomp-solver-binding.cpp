@@ -27,6 +27,8 @@ using constraint_t = std::tuple<single_constraint_t<N>, single_constraint_t<N>>;
 
 using point_t = std::tuple<float, float, float>;
 
+using horizontal_line_t = std::tuple<point_t, point_t, bool>;
+
 // std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>> solve_0(
 //     std::array<float, 6> start_pos_joints, 
 //     std::array<float, 3> end_pos_tcp, 
@@ -53,17 +55,21 @@ constraints::Constraint<N> createConstraint(constraint_t<N>& constraint) {
     return {createBound<N>(std::get<0>(constraint)), createBound<N>(std::get<1>(constraint))};
 }
 
-std::vector<HorizontalLine> createHorizontalLines(std::vector<std::tuple<point_t, point_t>>& obstacles) {
+std::vector<HorizontalLine> createHorizontalLines(std::vector<horizontal_line_t>& obstacles) {
     std::vector<HorizontalLine> horizontal_lines;
 
     for (auto& obstacle : obstacles) {
         point_t direction = std::get<0>(obstacle);
         point_t point = std::get<1>(obstacle);
+        bool bypass_from_below = std::get<2>(obstacle);
 
         QPVector2d direction_vec{std::get<0>(direction), std::get<1>(direction)};
-        QPVector3d point_vec{std::get<0>(point), std::get<1>(point), std::get<2>(point)};
 
-        horizontal_lines.push_back(HorizontalLine(direction_vec, point_vec));
+        QPVector3d point_vec{std::get<0>(point), std::get<1>(point), 
+            std::get<2>(point)};
+
+        horizontal_lines.push_back(HorizontalLine(direction_vec, 
+            point_vec, bypass_from_below));
     }
     return horizontal_lines;
 }
@@ -77,7 +83,7 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
     constraint_t<N_DIM> acceleration_constraints,
     constraint_t<N_DIM> position_constraints,
     constraint_t<3> constraints_3d,
-    std::vector<std::tuple<point_t, point_t>> obstacles) {
+    std::vector<horizontal_line_t> obstacles) {
 
         constraints::Constraint<N_DIM> velocity_constraints_transformed = 
             createConstraint<N_DIM>(velocity_constraints);
