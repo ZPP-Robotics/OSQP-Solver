@@ -83,13 +83,20 @@ std::tuple<std::vector<std::array<float, 6>>, std::vector<std::array<float, 6>>,
     constraint_t<3> constraints_3d,
     std::vector<std::tuple<point_t, point_t>> obstacles) {
 
-        constraints::Constraint<N_DIM> velocity_constraints_transformed = createConstraint<N_DIM>(velocity_constraints);
-        constraints::Constraint<N_DIM> acceleration_constraints_transformed = createConstraint<N_DIM>(acceleration_constraints);
-        constraints::Constraint<N_DIM> position_constraints_transformed = createConstraint<N_DIM>(position_constraints);
-        
-        constraints::Constraint<3> constraints_3d_transformed = createConstraint<3>(constraints_3d);
+        constraints::Constraint<N_DIM> velocity_constraints_transformed = 
+            createConstraint<N_DIM>(velocity_constraints);
 
-        std::vector<HorizontalLine> obstacles_transformed = createHorizontalLines(obstacles);
+        constraints::Constraint<N_DIM> acceleration_constraints_transformed = 
+            createConstraint<N_DIM>(acceleration_constraints);
+
+        constraints::Constraint<N_DIM> position_constraints_transformed = 
+            createConstraint<N_DIM>(position_constraints);
+        
+        constraints::Constraint<3> constraints_3d_transformed = 
+            createConstraint<3>(constraints_3d);
+
+        std::vector<HorizontalLine> obstacles_transformed = 
+            createHorizontalLines(obstacles);
 
         std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers{ 
             {&forward_kinematics_6_back, &joint_jacobian_6_back},
