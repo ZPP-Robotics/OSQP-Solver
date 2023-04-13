@@ -28,12 +28,11 @@ class ConstraintBuilder {
 public:
 
     ConstraintBuilder(size_t waypoints,
-                        const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
+                        const std::vector<RobotBall> &m,
                         const std::vector<HorizontalLine> &obstacles)
             : waypoints(waypoints), mappers(m), obstacles(obstacles) {
         linkVelocityToPosition();
         userConstraintOffset = lowerBounds.size();
-
         // for each joint:
         //   `waypoints` constriants for joint position,
         //   `waypoints - 1` constraints for joint velocity,
@@ -41,8 +40,8 @@ public:
         // and for each joint, for each FK function :
         //   3 * `waypoints` constraints for end effector position (X Y Z),
         //   `waypoints` * obstacles constraints for avoiding in Z axis the horizontal lines.
-        lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + (3 + obstacles.size()) * waypoints * mappers.size()), -INF);
-        upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + (3 + obstacles.size()) * waypoints * mappers.size()), INF);
+        lowerBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + waypoints * (3 + obstacles.size() * mappers.size())), -INF);
+        upperBounds.resize(userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2 + waypoints * (3 + obstacles.size() * mappers.size())), INF);
     }
 
     ConstraintBuilder &position(size_t i, const Constraint<N_DIM> &c) {
@@ -93,25 +92,27 @@ public:
         size_t obstacle_constraints_base = userConstraintOffset + N_DIM * (waypoints + waypoints - 1 + waypoints - 2);
         size_t next_obstacle_constraint_idx = obstacle_constraints_base;
 
-        for (const auto &[forward_kinematics_fun, jacobian_fun]: mappers) {
-            QPVector p_trajectory = mapJointTrajectoryToXYZ<N_DIM>(trajectory, forward_kinematics_fun);
+        for (const auto &ball: mappers) {
+            QPVector p_trajectory = mapJointTrajectoryToXYZ<N_DIM>(trajectory, ball.fk);
             for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                 Ctrl<N_DIM> q = trajectory.segment(waypoint * N_DIM, N_DIM);
                 Point p = p_trajectory.segment(waypoint * 3, 3);
                 Jacobian jac;
-                jacobian_fun((double *) jac.data(), (double *) q.data());
+                ball.jacobian((double *) jac.data(), (double *) q.data());
 
-                add3dPositionConstraint(next_obstacle_constraint_idx, con_3d, q, p, jac, waypoint);
-                next_obstacle_constraint_idx += 3;
+                if (ball.is_gripper) {
+                    add3dPositionConstraint(next_obstacle_constraint_idx, ball, con_3d, q, p, jac, waypoint);
+                    next_obstacle_constraint_idx += 3;
+                }
 
                 for (const auto &obstacle : obstacles) {
                     // Make specified joint avoid a given obstacle.
-                    if (obstacle.hasCollision(waypoint, p_trajectory, 5 * CENTIMETER)) {
-                        addObstacleVerticalConstraint(next_obstacle_constraint_idx++, obstacle, q, p, jac, waypoint);
+                    if (obstacle.hasCollision(waypoint, p_trajectory, ball)) {
+                        addObstacleVerticalConstraint(next_obstacle_constraint_idx++, ball, obstacle, q, p, jac, waypoint);
                     } else {
                         // Add dummy constraint so that at each iteration
                         // matrix of constraints has non-zero elements in exactly the same cells.
-                        add3dPositionConstraint(next_obstacle_constraint_idx++, Axis::Z, jac, waypoint, -INF, INF);
+                        add3dPositionConstraint(next_obstacle_constraint_idx++, ball, Axis::Z, jac, waypoint, -INF, INF);
                     }
                 }
             }
@@ -153,7 +154,7 @@ private:
 
     const size_t waypoints;
     size_t userConstraintOffset = 0;
-    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
+    std::vector<RobotBall> mappers;
     std::vector<HorizontalLine> obstacles;
     std::vector<MatrixCell> linearSystem{};
     std::vector<double> lowerBounds;
@@ -218,6 +219,7 @@ private:
     }
 
     void add3dPositionConstraint(size_t constraint_idx,
+                                const RobotBall& ball,
                                 const Constraint<3> &con_3d,
                                 const Ctrl<N_DIM> &q,
                                 const Point &p,
@@ -237,11 +239,12 @@ private:
                 axis_upp -= p[axis];
                 axis_upp += jacobian.row(axis) * q;
             }
-            add3dPositionConstraint(constraint_idx++, axis, jacobian, waypoint, axis_low, axis_upp);
+            add3dPositionConstraint(constraint_idx++, ball, axis, jacobian, waypoint, axis_low, axis_upp);
         }
     }
 
     void addObstacleVerticalConstraint(size_t constraint_idx,
+                                const RobotBall& ball,
                                 const HorizontalLine &obstacle,
                                 const Ctrl<N_DIM> &q,
                                 const Point &p,
@@ -260,10 +263,11 @@ private:
             // Bypass from above.
             low = bound;
         }
-        add3dPositionConstraint(constraint_idx, Axis::Z, jacobian, waypoint, low, upp);
+        add3dPositionConstraint(constraint_idx, ball, Axis::Z, jacobian, waypoint, low, upp);
     }
 
     void add3dPositionConstraint(size_t constraint_idx,
+                                const RobotBall& ball,
                                 Axis axis,
                                 const Jacobian &jacobian,
                                 size_t waypoint,
@@ -273,7 +277,7 @@ private:
         for (int i = 0; i < N_DIM; ++i) {
             constraintFactors[i] = {nthPos(waypoint) + i, jacobian(axis, i)};
         }
-        addConstraint(constraint_idx, constraintFactors, {low, upp});
+        addConstraint(constraint_idx, constraintFactors, {low + ball.radius, upp - ball.radius});
     }
 
 };

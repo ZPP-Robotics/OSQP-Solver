@@ -21,8 +21,8 @@ public:
                 const Constraint<N_DIM> &acc_con,
                 const Constraint<3> &con_3d,
                 const std::vector<HorizontalLine> &obstacles,
-                const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> &m,
-                const InverseKinematics &ik)
+                const std::vector<RobotBall> &m,
+                const InverseKinematics &gripper_ik)
             : max_waypoints(waypoints),
               time_step(time_step),
               pos_con(pos_con),
@@ -31,7 +31,7 @@ public:
               con_3d(con_3d),
               obstacles(obstacles),
               mappers(m),
-              ik(ik) {
+              gripper_ik(gripper_ik) {
         assert(max_waypoints >= 4);
     }
 
@@ -99,8 +99,8 @@ private:
     const Constraint<N_DIM> acc_con;
     const Constraint<3> con_3d;
     const std::vector<HorizontalLine> obstacles;
-    const std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers;
-    const InverseKinematics ik;
+    const std::vector<RobotBall> mappers;
+    const InverseKinematics gripper_ik;
 
 QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos) {
         // Warm start as described in paper.
@@ -164,29 +164,32 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         
         }
 
-        for (const auto &[fk_fun, _] : mappers) {
+        for (const auto &ball : mappers) {
             printf("solution for end effector: \n");
-            QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, fk_fun);
+            QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, ball.fk);
                 int waypoints = trajectory_xyz.size() / 3;
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Point p = trajectory_xyz.segment(waypoint * 3, 3);
                     printf("(%f, %f, %f)\n", p[Axis::X], p[Axis::Y], p[Axis::Z]);
 
-                    for (auto axis : XYZ_AXES) {
-                        double axis_low = -INF;
-                        double axis_upp = INF;
-                        if (low.has_value()) {
-                            axis_low = (*low)[axis];
+                    if (ball.is_gripper) {
+                        for (auto axis : XYZ_AXES) {
+                            double axis_low = -INF;
+                            double axis_upp = INF;
+                            if (low.has_value()) {
+                                axis_low = (*low)[axis];
+                            }
+                            if (upp.has_value()) {
+                                axis_upp = (*upp)[axis];
+                            }
+                            if (!(axis_low - ERROR <= p[axis] - ball.radius 
+                                && p[axis] + ball.radius <= axis_upp + ERROR)) res = false;
                         }
-                        if (upp.has_value()) {
-                            axis_upp = (*upp)[axis];
-                        }
-                        if (!(axis_low - ERROR <= p[axis] && p[axis] <= axis_upp + ERROR)) res = false;
                     }
 
                     for (const auto &obstacle : obstacles) {
-                        if (obstacle.hasCollision(waypoint, trajectory_xyz, 5 * CENTIMETER)
-                            && !obstacle.isAbove(p)) {
+                        if (obstacle.hasCollision(waypoint, trajectory_xyz, ball)
+                            && !obstacle.isAbove(p, ball)) {
                             res = false;
                         }
                     }

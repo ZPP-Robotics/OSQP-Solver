@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
         Kinematics_UR5e_arm
         GIT_REPOSITORY https://github.com/ZPP-Robotics/Kinematics-UR5e-arm.git
-        GIT_TAG        origin/more_kinematics
+        GIT_TAG        origin/main
 )
 set(Kinematics_UR5e_arm_BUILD_EXAMPLES OFF CACHE INTERNAL "Build kinematics example programs")
 FetchContent_MakeAvailable(Kinematics_UR5e_arm)
