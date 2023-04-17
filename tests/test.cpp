@@ -269,7 +269,7 @@ TEST(ConstraintsTest, position3d_2) {
     };
 
     VectorXd trajectory = VectorXd::Constant(waypoints * dims * 2, 1);
-    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {{pow2_fk, const_jac}}, {}}
+    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {RobotBall{pow2_fk, const_jac, 0, true}}, {}}
         .withObstacles(constraints::inRange<3>({{11, 22, 33}}, {{44, 55, 66}}), trajectory)
         .build();
 
@@ -323,7 +323,7 @@ TEST(ConstraintsTest, position3d_1) {
     };
 
     VectorXd trajectory = VectorXd::Constant(waypoints * dims * 2, 1);
-    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {{identity_fk, const_jac}}, {}}
+    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {RobotBall{identity_fk, const_jac, 0, true}}, {}}
         .withObstacles(constraints::inRange<3>({{11, 22, 33}}, {{44, 55, 66}}), trajectory)
         .build();
 
@@ -377,7 +377,7 @@ TEST(ConstraintsTest, position3d_jac_pow2) {
     };
 
     VectorXd trajectory = VectorXd::Constant(waypoints * dims * 2, 2);
-    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {{identity_fk, const_jac}}, {}}
+    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {RobotBall{identity_fk, const_jac, 0, true}}, {}}
         .withObstacles(constraints::inRange<3>({{11, 22, 33}}, {{44, 55, 66}}), trajectory)
         .build();
 
@@ -424,7 +424,7 @@ TEST(ConstraintsTest, ignore_velocity_trajectory) {
     trajectory <<
         2, 2, 2, 2, 2, 2, 1024, 1024, 1024, 1024, 1024, 1024;
 
-    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {{identity_fk, const_jac}}, {}}
+    auto [l, A, u] = ConstraintBuilder<dims>{waypoints, {RobotBall{identity_fk, const_jac, 0, true}}, {}}
         .withObstacles(constraints::inRange<3>({{11, 22, 33}}, {{44, 55, 66}}), trajectory)
         .build();
 

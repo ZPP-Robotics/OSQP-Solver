@@ -30,6 +30,17 @@ constexpr const std::array<Axis, 3> XYZ_AXES = {X, Y, Z};
 constexpr const double CENTIMETER = 0.01;
 const double ERROR = 1e-3;
 
+struct RobotBall {
+
+    RobotBall(const ForwardKinematicsFun &fk, const JacobianFun &jac, double radius, bool is_gripper = false) :
+        fk(fk), jacobian(jac), radius(radius), is_gripper(is_gripper) {}
+
+    ForwardKinematicsFun fk;
+    JacobianFun jacobian;
+    double radius;
+    bool is_gripper;
+};
+
 /**
  * Creates nxn sparse matrix M so that
  * i < offset then M[i, j] = 0
@@ -78,6 +89,7 @@ QPVector mapJointTrajectoryToXYZ(const QPVector &trajectory, const ForwardKinema
     for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
         Ctrl<N> q = trajectory.segment(waypoint * N, N);
         auto [x, y, z] = mapper((double *) q.data());
+        printf("(%f, %f, %f)\n", x, y, z);
         trajectory_xyz.segment(3 * waypoint, 3) = Point{x, y, z};
     }
     return trajectory_xyz;

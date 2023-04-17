@@ -71,17 +71,15 @@ public:
         return distP.dot(distQ) < 0;
     }
 
-    bool isClose(const Point &P, double radius) const {
-        assert(radius > CENTIMETER);
-        return getDistanceXY(P) < radius;
+    bool isClose(const Point &P, const RobotBall& b) const {
+        return getDistanceXY(P) < b.radius;
     }
 
-    bool hasCollision(int waypoint, const QPVector &trajectory_xyz, double radius) const {
-        assert(radius > CENTIMETER);
+    bool hasCollision(int waypoint, const QPVector &trajectory_xyz, const RobotBall& b) const {
         int waypoints = trajectory_xyz.size() / 3;        
         Point p = trajectory_xyz.segment(3 * waypoint, 3);
 
-        if (isClose(p, radius)) return true;
+        if (isClose(p, b)) return true;
         if (waypoint > 0) {
             Point p_prev = trajectory_xyz.segment(3 * (waypoint - 1), 3);
             if (areOnOppositeSides(p_prev, p)) return true;
@@ -93,10 +91,10 @@ public:
         return false;
     }
 
-    bool isAbove(const Point &P) const {
+    bool isAbove(const Point &P, const RobotBall& b) const {
         return bypass_from_below
-            ? (P - A)[Axis::Z] <= ERROR 
-            : (P - A)[Axis::Z] >= -ERROR;
+            ? (P - A)[Axis::Z] <= -b.radius + ERROR 
+            : (P - A)[Axis::Z] >= b.radius - ERROR;
     }
 
     bool bypassFromBelow() const {

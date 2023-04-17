@@ -10,7 +10,7 @@
 #include <fstream>
 
 constexpr const double TIME_STEP = 0.1;
-constexpr const size_t WAYPOINTS = 50 + 2;
+constexpr const size_t WAYPOINTS = 800 + 2;
 constexpr const int PROPERTIES = 2;
 constexpr const size_t DIMS = 6;
 constexpr const int VARS = WAYPOINTS * PROPERTIES * DIMS;
@@ -28,34 +28,35 @@ constexpr double Q_MAX =   2 * M_PI;
 // Converts joint angles to site_xpos (x, y, z)
 template<size_t N>
 Point toPoint(const Ctrl<N> &c) {
-    auto [x, y, z] = forward_kinematics_4((double *) c.data());
+    auto [x, y, z] = forward_kinematics_elbow_joint((double *) c.data());
     return {x, y, z};
 }
 
 int main() {
 
-    std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers{ 
-        {&forward_kinematics_6_back, &joint_jacobian_6_back},
-        {&forward_kinematics, &joint_jacobian},
+    std::vector<RobotBall> mappers{ 
+        //RobotBall(&forward_kinematics_elbow_joint, &jacobian_elbow_joint, 0.00, true),
+        RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, 0.15, false),
+        RobotBall(&forward_kinematics, &joint_jacobian, 0.05, true),
     };
     
     GOMPSolver<DIMS> fff(WAYPOINTS, TIME_STEP,
-                       constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
-                       constraints::inRange<DIMS>(of<DIMS>(-M_PI), of<DIMS>(M_PI)),
-                       constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180), of<DIMS>(M_PI * 800 / 180)),
-                       constraints::inRange<3>({{-INF, -0.3, -0.1}}, {{INF, INF, INF}}),
-                       {
-                        HorizontalLine({0, 1}, {0, 0, 0.6}, true),
+                        constraints::inRange<DIMS>(of<DIMS>(Q_MIN), of<DIMS>(Q_MAX)),
+                        constraints::inRange<DIMS>(of<DIMS>(-M_PI), of<DIMS>(M_PI)),
+                        constraints::inRange<DIMS>(of<DIMS>(-M_PI * 800 / 180), of<DIMS>(M_PI * 800 / 180)),
+                        constraints::inRange<3>({{-INF, -0.4, -INF}}, {{INF, INF, INF}}),
+                        {
+                        // HorizontalLine({0, 1}, {0, 0, 0.6}, true),
                         // HorizontalLine({0, 1}, {0.3, 0, 0.5}, false)
-                       },
-                       mappers,
-                       &inverse_kinematics);
+                        },
+                        mappers,
+                        &inverse_kinematics);
     ;
     // for (int i = 0; i < 1; ++i) {
     //     auto start = std::chrono::high_resolution_clock::now();
         
         Point start_pos_gt = toPoint<6>({0,0,0,0,0,0});
-        Point   end_pos_gt = toPoint<6>({M_PI,0,0,0,0,0});
+        Point   end_pos_gt = toPoint<6>({0,0,0,0,0,0});
     //     // printf("FIRST: \n");
     //     // auto [et, b12] = s.run({0,0,0,0,0,0}, {M_PI,0,0,0,0,0});
     //     // printf("SECOND: \n");
@@ -93,8 +94,8 @@ std::cout << ToString(e) << endl;
         std::cout << ToString(e) << endl;
         std::cout << b1.size() << endl;
     
-    double q[6] = {M_PI_2, M_PI_4, M_PI_2, -M_PI_4, 0, M_PI};
-    auto [x, y, z] = forward_kinematics(q);
+    double q[6] = {0, 0, 0, 0, 0, 0};
+    auto [x, y, z] = forward_kinematics_elbow_joint(q);
     printf("(%f, %f, %f)\n", x, y, z);
 
 }
