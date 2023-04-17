@@ -133,7 +133,7 @@ public:
         return {exit_code, solution};
     }
 
-    std::pair<ExitCode, QPVector> run_max_ik(Ctrl<N_DIM> start_pos, {x, y, z}, , InverseKinematicsMaxSolution &max_ik_solution ) {
+    std::pair<ExitCode, QPVector> run_max_ik(Ctrl<N_DIM> start_pos, {x, y, z}, InverseKinematicsMaxSolution &max_ik_solution ) {
         double q_sol_end[8 * 6];
         int num_sols_end = max_ik_solution(q_sol_end, x, y, z);
         
