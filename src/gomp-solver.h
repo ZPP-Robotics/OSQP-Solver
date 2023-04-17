@@ -90,16 +90,46 @@ public:
         return {last_code, last_solution};
     }
 
-    std::pair<ExitCode, QPVector> run(Coordinates start_pos, Coordinates end_pos) {
-        double q_sols_start[8 * 6];
+    std::pair<ExitCode, QPVector> run(Ctrl<N_DIM> start_pos, Coordinates end_pos) {
         double q_sols_end[8 * 6];
-        int num_sols_start = inverse_kinematics(q_sols_start, std::get<0>(start_pos), std::get<1>(start_pos), std::get<2>(start_pos));
         int num_sols_end = inverse_kinematics(q_sols_end, std::get<0>(end_pos), std::get<1>(end_pos), std::get<2>(end_pos));
+        
+        if (num_sols_end == 0) {
+            return {ExitCode::kUnknown, QPVector()};
+        }
+        
+        double q1 = q_sols_end[0 * 6 + 0];
+        double q2 = q_sols_end[0 * 6 + 1];
+        double q3 = q_sols_end[0 * 6 + 2];
+        double q4 = q_sols_end[0 * 6 + 3];
+        double q5 = q_sols_end[0 * 6 + 4];
+        double q6 = q_sols_end[0 * 6 + 5];
 
-        Position start = choose_solution(q_sols_start);
-        Position end = choose_solution(q_sols_end);
+        Ctrl<N_DIM> joint_end_pos = {q1, q2, q3, q4, q5, q6};
+        auto [exit_code, solution] = run(start_pos, joint_end_pos);
 
-        return run(start, end);
+        for (int i = 1; i < num_sols_end; ++i) {
+            q1 = q_sols_end[i * 6 + 0];
+            q2 = q_sols_end[i * 6 + 1];
+            q3 = q_sols_end[i * 6 + 2];
+            q4 = q_sols_end[i * 6 + 3];
+            q5 = q_sols_end[i * 6 + 4];
+            q6 = q_sols_end[i * 6 + 5];
+
+            joint_end_pos = {q1, q2, q3, q4, q5, q6};
+            auto [exit_code_sol, solution_sol] = run(start_pos, joint_end_pos);
+
+            if (exit_code_sol == ExitCode::kOptimal) {
+                continue;
+            }
+            else if (solution_sol.size() < solution.size()) {
+                exit_code = exit_code_sol;
+                solution = solution_sol;
+            }
+
+        }
+
+        return {exit_code, solution};
     }
 
 
