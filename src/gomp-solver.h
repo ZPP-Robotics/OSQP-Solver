@@ -7,6 +7,7 @@
 #include "osqp-wrapper.h"
 
 using InverseKinematics = std::function<int(double *, double, double, double)>;
+using InverseKinematicsMaxSolution = std::function<int(double *, double, double, double)>;
 const int MAX_ITERATIONS = 100;
 const int SEGMENTS = 10;
 
@@ -128,6 +129,27 @@ public:
             }
 
         }
+
+        return {exit_code, solution};
+    }
+
+    std::pair<ExitCode, QPVector> run_max_ik(Ctrl<N_DIM> start_pos, {x, y, z}, , InverseKinematicsMaxSolution &max_ik_solution ) {
+        double q_sol_end[8 * 6];
+        int num_sols_end = max_ik_solution(q_sol_end, x, y, z);
+        
+        if (num_sols_end == 0) {
+            return {ExitCode::kUnknown, QPVector()};
+        }
+        
+        double q1 = q_sols_end[0 * 6 + 0];
+        double q2 = q_sols_end[0 * 6 + 1];
+        double q3 = q_sols_end[0 * 6 + 2];
+        double q4 = q_sols_end[0 * 6 + 3];
+        double q5 = q_sols_end[0 * 6 + 4];
+        double q6 = q_sols_end[0 * 6 + 5];
+
+        Ctrl<N_DIM> joint_end_pos = {q1, q2, q3, q4, q5, q6};
+        auto [exit_code, solution] = run(start_pos, joint_end_pos);
 
         return {exit_code, solution};
     }
