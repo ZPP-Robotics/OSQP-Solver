@@ -18,6 +18,28 @@ using QPVector3d = Eigen::Vector3d;
 using Point = Eigen::Vector3d;
 template<size_t N>
 using Ctrl = Eigen::Vector<double, N>;
+using ForwardKinematicsFun = std::function<std::tuple<double, double, double>(double *)>;
+using JacobianFun = std::function<void(double *, double *)>;
+
+enum Axis : size_t {
+    X, Y, Z
+};
+
+constexpr const std::array<Axis, 3> XYZ_AXES = {X, Y, Z};
+
+constexpr const double CENTIMETER = 0.01;
+const double ERROR = 1e-3;
+
+struct RobotBall {
+
+    RobotBall(const ForwardKinematicsFun &fk, const JacobianFun &jac, double radius, bool is_gripper = false) :
+        fk(fk), jacobian(jac), radius(radius), is_gripper(is_gripper) {}
+
+    ForwardKinematicsFun fk;
+    JacobianFun jacobian;
+    double radius;
+    bool is_gripper;
+};
 
 /**
  * Creates nxn sparse matrix M so that
@@ -30,8 +52,11 @@ QPMatrixSparse triDiagonalMatrix(double a, double b, int n, int offset = 0, int 
     std::vector<Eigen::Triplet<double>> nonZeroValues;
     for (int i = offset; i < n; ++i) {
         nonZeroValues.emplace_back(i, i, a);
-        if (i + 1 + diagonal_num < n) {
-            nonZeroValues.emplace_back(i, i + 1 + diagonal_num, b);
+        if (i + diagonal_num < n) {
+            nonZeroValues.emplace_back(i, i + diagonal_num, b);
+        }
+        if (i - diagonal_num >= offset) {
+            nonZeroValues.emplace_back(i, i - diagonal_num, b);
         }
     }
     m.setFromTriplets(nonZeroValues.begin(), nonZeroValues.end());
@@ -54,6 +79,20 @@ QPVector linspace(const Eigen::Vector<double, N> &a, const Eigen::Vector<double,
         res.segment(step * N, N) = current;
     }
     return res;
+}
+
+template<size_t N>
+QPVector mapJointTrajectoryToXYZ(const QPVector &trajectory, const ForwardKinematicsFun &mapper) {
+    int waypoints = trajectory.size() / 2 / N;
+    QPVector trajectory_xyz(3 * waypoints);
+    printf("mapping trajectory Q to XYZ. Waypoints XYZ: %d\n", waypoints);
+    for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
+        Ctrl<N> q = trajectory.segment(waypoint * N, N);
+        auto [x, y, z] = mapper((double *) q.data());
+        printf("(%f, %f, %f)\n", x, y, z);
+        trajectory_xyz.segment(3 * waypoint, 3) = Point{x, y, z};
+    }
+    return trajectory_xyz;
 }
 
 #endif //UTILS_H

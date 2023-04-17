@@ -8,10 +8,17 @@
 !.gitignore
 
 # Or directories
+!src
 !src/
 !src/*
 !src/**/*
 
-!test/
-!test/*
-!test/**/*
+!tests
+!tests/
+!tests/*
+!tests/**/*
+
+!examples
+!examples/*
+!examples/**/*
+!examples/**/*

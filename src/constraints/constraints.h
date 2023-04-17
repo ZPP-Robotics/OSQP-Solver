@@ -8,7 +8,7 @@
 
 namespace constraints {
 
-    const double INF = std::numeric_limits<double>::infinity();
+    const double INF = 1e30;
 
     // N-dimensional bound (upper or lower).
     template<size_t N>
@@ -36,28 +36,35 @@ namespace constraints {
         return inRange<N>({vals}, {vals});
     }
 
-//    template<size_t N>
-//    Constraint<N> greaterEq(const Eigen::Vector<double, N> &vals) {
-//        return inRange<N>(vals, {});
-//    }
-//
-//    template<size_t N>
-//    Constraint<N> lessEq(const Eigen::Vector<double, N> &vals) {
-//        return inRange<N>({}, vals);
-//    }
-//
-//    template<size_t N>
-//    Constraint<N> zObstacleGeq(double z) {
-//        auto inf_inf_z = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
-//        inf_inf_z.first->at(0) = z;
-//        return inf_inf_z;
-//    }
+   template<size_t N>
+   Constraint<N> greaterEq(const Eigen::Vector<double, N> &vals) {
+       return inRange<N>(vals, {});
+   }
+
+   template<size_t N>
+   Constraint<N> lessEq(const Eigen::Vector<double, N> &vals) {
+       return inRange<N>({}, vals);
+   }
 
     template<size_t N>
-    const Constraint<N> ANY = inRange<N>({of<N>(-INF)}, {of<N>(INF)});
+    const Constraint<N> ANY = {{}, {}};
 
     template<size_t N>
     const Constraint<N> EQ_ZERO = equal<N>(of<N>(0));
+
+    template<size_t N>
+    const Bound<N> scaled(const Bound<N> &b, double v) {
+        if (b.has_value()) {
+            return (*b) * v;
+        }
+        return {};
+    }
+
+    template<size_t N>
+    const Constraint<N> scaled(const Constraint<N> &c, double v) {
+        auto &[l, u] = c;
+        return {scaled<N>(l, v), scaled<N>(u, v)};
+    }
 
 }
 
