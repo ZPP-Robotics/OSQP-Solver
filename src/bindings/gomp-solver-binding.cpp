@@ -100,9 +100,9 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
         std::vector<HorizontalLine> obstacles_transformed = 
             createHorizontalLines(obstacles);
 
-        std::vector<std::pair<ForwardKinematicsFun, JacobianFun>> mappers{ 
-            {&forward_kinematics_6_back, &joint_jacobian_6_back},
-            {&forward_kinematics, &joint_jacobian},
+        std::vector<RobotBall> mappers{ 
+            RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, 0.15, false),
+            RobotBall(&forward_kinematics, &joint_jacobian, 0.05, true),
         };
 
         GOMPSolver<N_DIM> gomp_obj(waypoints_count,
