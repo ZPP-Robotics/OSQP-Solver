@@ -83,7 +83,8 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
     constraint_t<N_DIM> acceleration_constraints,
     constraint_t<N_DIM> position_constraints,
     constraint_t<3> constraints_3d,
-    std::vector<horizontal_line_t> obstacles) {
+    std::vector<horizontal_line_t> obstacles,
+    float radius) {
 
         constraints::Constraint<N_DIM> velocity_constraints_transformed = 
             createConstraint<N_DIM>(velocity_constraints);
@@ -101,8 +102,8 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
             createHorizontalLines(obstacles);
 
         std::vector<RobotBall> mappers{ 
-            RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, 0.15, false),
-            RobotBall(&forward_kinematics, &joint_jacobian, 0.05, true),
+            RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, radius, false),
+            RobotBall(&forward_kinematics, &joint_jacobian, radius, true),
         };
 
         GOMPSolver<N_DIM> gomp_obj(waypoints_count,
