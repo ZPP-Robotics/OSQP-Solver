@@ -125,7 +125,7 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         // Set end velocity to zero.
         assert (waypoints >= 4);
         Ctrl<N_DIM> q = end_pos;
-        printf("(%f, %f)\n", q[0], q[1]);
+        // printf("(%f, %f)\n", q[0], q[1]);
 
         return ConstraintBuilder<N_DIM>{waypoints, mappers, obstacles}
                 .position(0, constraints::equal<N_DIM>(start_pos))
@@ -145,32 +145,32 @@ QPVector calcWarmStart(const Ctrl<N_DIM> &start_pos, const Ctrl<N_DIM> &end_pos)
         Ctrl<N_DIM> prevV = Eigen::VectorXd::Zero(N_DIM);
         for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
             Ctrl<N_DIM> q = q_trajectory.segment(N_DIM * waypoint, N_DIM);
-            printf("waypoint %d\n", waypoint);
-            printf("q: (");
+            // printf("waypoint %d\n", waypoint);
+            // printf("q: (");
             for (int i = 0; i < N_DIM; ++i) {
-                printf("%f, ", q[i]);
+                // printf("%f, ", q[i]);
             }
-            printf(")\nv: (");
+            // printf(")\nv: (");
             Ctrl<N_DIM> v = q_trajectory.segment(waypoints * N_DIM + N_DIM * waypoint, N_DIM);
             for (int i = 0; i < N_DIM; ++i) {
-                printf("%f, ", v[i] * 10);
+                // printf("%f, ", v[i] * 10);
             }
-            printf(")\nacc: (");
+            // printf(")\nacc: (");
             for (int i = 0; i < N_DIM; ++i) {
-                printf("%f, ", (v[i] - prevV[i]) * 10 * 10);
+                // printf("%f, ", (v[i] - prevV[i]) * 10 * 10);
             }
             prevV = v;
-            printf(")\n\n");
+            // printf(")\n\n");
         
         }
 
         for (const auto &ball : mappers) {
-            printf("solution for end effector: \n");
+            // printf("solution for end effector: \n");
             QPVector trajectory_xyz = mapJointTrajectoryToXYZ<N_DIM>(q_trajectory, ball.fk);
                 int waypoints = trajectory_xyz.size() / 3;
                 for (int waypoint = 0; waypoint < waypoints; ++waypoint) {
                     Point p = trajectory_xyz.segment(waypoint * 3, 3);
-                    printf("(%f, %f, %f)\n", p[Axis::X], p[Axis::Y], p[Axis::Z]);
+                    // printf("(%f, %f, %f)\n", p[Axis::X], p[Axis::Y], p[Axis::Z]);
 
                     if (ball.is_gripper) {
                         for (auto axis : XYZ_AXES) {

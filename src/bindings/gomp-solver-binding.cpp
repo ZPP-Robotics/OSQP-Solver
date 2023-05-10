@@ -84,7 +84,7 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
     constraint_t<N_DIM> position_constraints,
     constraint_t<3> constraints_3d,
     std::vector<horizontal_line_t> obstacles,
-    std::array<float, (N_DIM - 1)> radius) {
+    std::array<float, (N_DIM)> radius) {
 
         constraints::Constraint<N_DIM> velocity_constraints_transformed = 
             createConstraint<N_DIM>(velocity_constraints);
@@ -102,11 +102,13 @@ std::pair<OsqpExitCode, std::vector<double>> solve_1(
             createHorizontalLines(obstacles);
 
         std::vector<RobotBall> mappers{ 
-            RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, radius[1], false),
-            RobotBall(&forward_kinematics, &joint_jacobian, radius[0], true),
-            RobotBall(&forward_kinematics_4, &joint_jacobian_4, radius[2], false),
-            RobotBall(&forward_kinematics_3, &joint_jacobian_3, radius[3], false),
-            RobotBall(&forward_kinematics_elbow_joint, &jacobian_elbow_joint, radius[4], false),  
+            RobotBall(&forward_kinematics_6_back, &joint_jacobian_6_back, radius[2], false),
+            RobotBall(&forward_kinematics, &joint_jacobian, radius[1], false),
+            RobotBall(&forward_kinematics_4, &joint_jacobian_4, radius[3], false),
+            RobotBall(&forward_kinematics_3, &joint_jacobian_3, radius[4], false),
+            RobotBall(&forward_kinematics_elbow_joint, &jacobian_elbow_joint, radius[5], false),
+            RobotBall(&forward_kinematics_gripper, &joint_jacobian_gripper, radius[0], true),
+              
         };
 
         GOMPSolver<N_DIM> gomp_obj(waypoints_count,
