@@ -13,3 +13,10 @@ include(GoogleTest)
 
 add_executable(tests test.cpp)
 target_link_libraries(tests qp_solver gtest gmock gtest_main)
+
+find_package(Python3 COMPONENTS Development)
+add_library(gomp MODULE ../src/bindings/gomp-solver-binding.cpp)
+set_target_properties(gomp PROPERTIES PREFIX "" OUTPUT_NAME "gomp")
+
+target_include_directories(gomp PRIVATE /home/olaf/anaconda3/lib/python3.9/site-packages/pybind11/include/)
+target_link_libraries(gomp PRIVATE Python3::Python qp_solver)

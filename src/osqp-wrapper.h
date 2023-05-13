@@ -16,7 +16,7 @@ public:
     QPSolver(const QPConstraints &c, const QPMatrixSparse &P) {
         auto &[l, A, u] = c;
         OsqpInstance instance;
-        std::cout << l.size() << ", " << u.size() << ", " << A.cols() << ", " << A.rows() <<", " << P.rows() << ", " << P.cols() << std::endl;
+        // std::cout << l.size() << ", " << u.size() << ", " << A.cols() << ", " << A.rows() <<", " << P.rows() << ", " << P.cols() << std::endl;
         instance.constraint_matrix = A;
         instance.objective_matrix = P;
         instance.objective_vector.setZero(A.cols());
@@ -44,7 +44,7 @@ public:
 
     void setWarmStart(const QPVector& primal_vector) {
         auto status = solver.SetPrimalWarmStart(primal_vector);
-        std::cout << "STATUS: " << status.ToString() << std::endl;
+        // std::cout << "STATUS: " << status.ToString() << std::endl;
         assert(status.ok());
     }
 
