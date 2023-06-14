@@ -120,39 +120,42 @@ public:
             joint_end_pos = {q1, q2, q3, q4, q5, q6};
             auto [exit_code_sol, solution_sol] = run(start_pos, joint_end_pos);
 
-            if (exit_code_sol == ExitCode::kOptimal) {
-                continue;
-            }
-            else if (solution_sol.size() < solution.size()) {
+            if (exit_code_sol == ExitCode::kOptimal && 
+                solution_sol.size() < solution.size()) {
                 exit_code = exit_code_sol;
                 solution = solution_sol;
             }
+            else if (exit_code_sol == ExitCode::kOptimal && 
+                exit_code != ExitCode::kOptimal) {
+                    exit_code = exit_code_sol;
+                    solution = solution_sol;
+            }
 
         }
 
         return {exit_code, solution};
     }
 
-    std::pair<ExitCode, QPVector> run_max_ik(Ctrl<N_DIM> start_pos, {x, y, z}, InverseKinematicsMaxSolution &max_ik_solution ) {
-        double q_sol_end[8 * 6];
-        int num_sols_end = max_ik_solution(q_sol_end, x, y, z);
+    // // std::pair<ExitCode, QPVector> run_max_ik(Ctrl<N_DIM> start_pos, {x, y, z}, InverseKinematicsMaxSolution &max_ik_solution ) {
+    // //     double q_sol_end[8 * 6];
+    // //     int num_sols_end = max_ik_solution(q_sol_end, x, y, z);
         
-        if (num_sols_end == 0) {
-            return {ExitCode::kUnknown, QPVector()};
-        }
+    // //     if (num_sols_end == 0) {
+    // //         return {ExitCode::kUnknown, QPVector()};
+    // //     }
         
-        double q1 = q_sols_end[0 * 6 + 0];
-        double q2 = q_sols_end[0 * 6 + 1];
-        double q3 = q_sols_end[0 * 6 + 2];
-        double q4 = q_sols_end[0 * 6 + 3];
-        double q5 = q_sols_end[0 * 6 + 4];
-        double q6 = q_sols_end[0 * 6 + 5];
+    // //     double q1 = q_sols_end[0 * 6 + 0];
+    // //     double q2 = q_sols_end[0 * 6 + 1];
+    // //     double q3 = q_sols_end[0 * 6 + 2];
+    // //     double q4 = q_sols_end[0 * 6 + 3];
+    // //     double q5 = q_sols_end[0 * 6 + 4];
+    // //     double q6 = q_sols_end[0 * 6 + 5];
 
-        Ctrl<N_DIM> joint_end_pos = {q1, q2, q3, q4, q5, q6};
-        auto [exit_code, solution] = run(start_pos, joint_end_pos);
+    // //     Ctrl<N_DIM> joint_end_pos = {q1, q2, q3, q4, q5, q6};
+    // //     auto [exit_code, solution] = run(start_pos, joint_end_pos);
 
-        return {exit_code, solution};
-    }
+    // //     return {exit_code, solution};
+    // // }
 
 
 private:
